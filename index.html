@@ -5,9 +5,10 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Evil Wizard Arcade</title>
   
-  <!-- Firebase Compat Libraries (Fixes the clicking issue) -->
+  <!-- Firebase Global Compat Libraries -->
   <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+  <!-- Storage script removed! -->
 
   <style>
     :root { --bg: #141414; --text: #fff; --muted: #808080; --brand: #e50914; }
@@ -24,13 +25,13 @@
     .profiles-title { font-size: 3.5vw; font-weight: 500; margin-bottom: 1.5em; text-align: center; }
     .profile-list { display: flex; gap: 2vw; flex-wrap: wrap; justify-content: center; margin-bottom: 2.5em; }
     .profile { display: flex; flex-direction: column; align-items: center; cursor: pointer; transition: transform 0.2s; position: relative; }
-    .profile-avatar { width: 10vw; height: 10vw; min-width: 90px; min-height: 90px; max-width: 150px; max-height: 150px; border-radius: 4px; border: 3px solid transparent; display: flex; align-items: center; justify-content: center; font-size: 3rem; color: white; transition: 0.2s; background-size: cover; background-position: center; }
+    .profile-avatar { width: 10vw; height: 10vw; min-width: 90px; min-height: 90px; max-width: 150px; max-height: 150px; border-radius: 4px; border: 3px solid transparent; display: flex; align-items: center; justify-content: center; font-size: 3rem; color: white; transition: 0.2s; background-size: cover; background-position: center; background-color: #333; }
     .profile-name { margin-top: 15px; font-size: 1.2vw; color: var(--muted); text-align: center; }
     .profile:hover .profile-avatar { border-color: white; }
     .profile:hover .profile-name { color: white; }
     .add-btn { background: transparent; border: 2px solid var(--muted); color: var(--muted); font-size: 4rem; }
 
-    /* Manage Mode Overlay Icon */
+    /* Manage Mode */
     .profile-edit-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 10vw; min-height: 90px; max-height: 150px; background: rgba(0,0,0,0.6); display: flex; align-items: center; justify-content: center; font-size: 2rem; border-radius: 4px; opacity: 0; transition: opacity 0.2s; }
     .managing .profile-edit-overlay { opacity: 1; }
     .manage-btn { background: transparent; border: 1px solid var(--muted); color: var(--muted); padding: 10px 24px; font-size: 1.1rem; letter-spacing: 2px; cursor: pointer; transition: 0.2s; }
@@ -38,23 +39,26 @@
 
     /* Modals */
     .modal-wrap { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.85); display: flex; align-items: center; justify-content: center; z-index: 1000; }
-    .modal { background: #222; border-radius: 8px; padding: 30px; width: 90%; max-width: 420px; box-shadow: 0 10px 30px rgba(0,0,0,0.8); }
+    .modal { background: #222; border-radius: 8px; padding: 30px; width: 90%; max-width: 450px; box-shadow: 0 10px 30px rgba(0,0,0,0.8); max-height: 90vh; overflow-y: auto; }
     .modal h2 { margin-bottom: 20px; font-size: 1.5rem; color: white; }
     .modal label { display: block; font-size: 0.85rem; color: var(--muted); margin: 15px 0 5px 0; }
-    .modal input { width: 100%; padding: 10px; background: #333; border: 1px solid #444; border-radius: 4px; color: white; font-size: 1rem; outline: none; }
-    .modal input:focus { border-color: var(--brand); }
+    .modal input[type="text"] { width: 100%; padding: 10px; background: #333; border: 1px solid #444; border-radius: 4px; color: white; font-size: 1rem; outline: none; }
+    .modal input[type="file"] { width: 100%; padding: 10px; background: #333; border: 1px dashed #555; border-radius: 4px; color: white; cursor: pointer; }
+    .modal input[type="text"]:focus { border-color: var(--brand); }
     .modal-actions { display: flex; justify-content: space-between; margin-top: 25px; gap: 10px; }
     
-    .lb-row { display: flex; justify-content: space-between; padding: 10px; border-bottom: 1px solid #444; font-size: 1.1rem; }
-    .lb-row:nth-child(1) { color: gold; font-weight: bold; font-size: 1.3rem; }
-    .lb-row:nth-child(2) { color: silver; }
-    .lb-row:nth-child(3) { color: #cd7f32; }
+    /* Admin Panel specifics */
+    .admin-row { display: flex; justify-content: space-between; align-items: center; background: #333; padding: 10px; margin-bottom: 8px; border-radius: 4px; }
+    .delete-btn { background: #333; border: 1px solid #555; color: #ff4d4d; padding: 6px 12px; font-weight: bold; cursor: pointer; border-radius: 4px; }
+    .delete-btn:hover { background: #ff4d4d; color: white; }
+    .warning-box { border: 1px solid #ff4d4d; padding: 15px; border-radius: 4px; margin-top: 20px; text-align: center; }
 
     /* Hub Screen */
-    .hub-header { padding: 20px 4%; display: flex; justify-content: space-between; background: linear-gradient(to bottom, #141414 0%, transparent 100%); position: sticky; top: 0; z-index: 100; }
+    .hub-header { padding: 20px 4%; display: flex; justify-content: space-between; background: linear-gradient(to bottom, #141414 0%, transparent 100%); position: sticky; top: 0; z-index: 100; align-items: center; }
     .hub-title { font-size: 2rem; font-weight: bold; color: var(--brand); letter-spacing: 2px; }
+    .header-controls { display: flex; gap: 15px; align-items: center; }
     .hub-user { display: flex; align-items: center; gap: 10px; cursor: pointer; }
-    .hub-user-avatar { width: 35px; height: 35px; border-radius: 4px; background-size: cover; background-position: center; display: flex; align-items: center; justify-content: center; font-weight: bold; color: white; }
+    .hub-user-avatar { width: 35px; height: 35px; border-radius: 4px; background-size: cover; background-position: center; display: flex; align-items: center; justify-content: center; font-weight: bold; color: white; background-color: #333;}
     
     .game-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 15px; padding: 20px 4% 50px 4%; }
     .game-card { background: #222; border-radius: 4px; cursor: pointer; aspect-ratio: 16/9; display: flex; flex-direction: column; align-items: center; justify-content: center; position: relative; transition: all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94); border: 1px solid rgba(255,255,255,0.05); }
@@ -62,18 +66,21 @@
     .game-emoji { font-size: 3.5rem; z-index: 2; transition: 0.2s; }
     .game-card:hover .game-emoji { transform: scale(1.2); }
     .game-title { position: absolute; bottom: 10px; left: 10px; font-weight: bold; font-size: 0.9rem; z-index: 2; text-shadow: 1px 1px 3px black; }
-    .game-bg { position: absolute; top:0; left:0; width:100%; height:100%; background: linear-gradient(135deg, rgba(255,255,255,0.1) 0%, transparent 100%); z-index: 1; }
 
     /* Game View */
     .game-view { display: flex; flex-direction: column; align-items: center; padding: 20px; }
     .game-toolbar { width: 100%; max-width: 600px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
     .back-btn, .action-btn { background: var(--brand); border: none; color: white; padding: 8px 16px; font-weight: bold; cursor: pointer; border-radius: 4px; }
     .back-btn:hover, .action-btn:hover { background: #f40612; }
-    .delete-btn { background: #333; border: 1px solid #555; color: #ff4d4d; padding: 8px 16px; font-weight: bold; cursor: pointer; border-radius: 4px; }
-    .delete-btn:hover { background: #ff4d4d; color: white; }
     
     .hidden { display: none !important; }
     .controls-hint { margin-top: 15px; color: var(--muted); text-align: center; font-size: 0.9rem; }
+
+    /* Leaderboard specifics */
+    .lb-row { display: flex; justify-content: space-between; padding: 10px; border-bottom: 1px solid #444; font-size: 1.1rem; }
+    .lb-row:nth-child(1) { color: gold; font-weight: bold; font-size: 1.3rem; }
+    .lb-row:nth-child(2) { color: silver; }
+    .lb-row:nth-child(3) { color: #cd7f32; }
 
     /* Shared Canvas & Games */
     canvas { background: #000; border: 2px solid #333; border-radius: 8px; box-shadow: 0 10px 30px rgba(0,0,0,0.8); max-width: 100%; }
@@ -95,13 +102,15 @@
     .typing-word { font-size: 3rem; margin-bottom: 20px; letter-spacing: 2px; }
     .typing-input { padding: 10px; font-size: 1.5rem; width: 300px; text-align: center; border-radius: 4px; border: none; outline: none; }
 
-    /* MOBILE SPECIFIC OVERRIDES (Fixes Goal 1) */
+    /* MOBILE OVERRIDES */
     @media (max-width: 768px) {
       .profile-name { font-size: 16px; margin-top: 10px; }
       .profile-avatar { width: 100px; height: 100px; font-size: 3.5rem; }
       .profiles-title { font-size: 2rem; margin-bottom: 30px; }
       .profile-list { gap: 20px; }
       .manage-btn { font-size: 1rem; padding: 10px 20px; }
+      .hub-header { padding: 15px 4%; }
+      .hub-title { font-size: 1.5rem; }
     }
   </style>
 </head>
@@ -122,14 +131,37 @@
       <input type="text" id="edit-name" placeholder="Name">
       <label>Background Color (Hex Code)</label>
       <input type="text" id="edit-color" placeholder="#e50914">
-      <label>Avatar Image URL (Optional)</label>
+      
+      <label>Upload Avatar Image (100% Free)</label>
+      <input type="file" id="edit-file" accept="image/png, image/jpeg, image/gif">
+      
+      <label>Or use Image URL</label>
       <input type="text" id="edit-img" placeholder="https://example.com/avatar.png">
-      <div class="modal-actions">
-        <button class="delete-btn" onclick="deleteCurrentProfile()">Delete</button>
-        <div>
-          <button class="action-btn" style="background:#555;" onclick="closeModal()">Cancel</button>
-          <button class="action-btn" onclick="saveProfileChanges()">Save</button>
-        </div>
+      
+      <div class="modal-actions" style="justify-content: flex-end;">
+        <button class="action-btn" style="background:#555;" onclick="closeModal('edit-modal')">Cancel</button>
+        <button class="action-btn" id="save-prof-btn" onclick="saveProfileChanges()">Save Profile</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ADMIN PANEL MODAL -->
+  <div id="admin-modal" class="modal-wrap hidden">
+    <div class="modal">
+      <h2>⚙️ Adam's Admin Panel</h2>
+      <p style="color: var(--muted); font-size: 0.9rem; margin-bottom: 15px;">Manage arcade users and database.</p>
+      
+      <div id="admin-profiles-list" style="margin-bottom: 20px;">
+        <!-- Loaded via JS -->
+      </div>
+
+      <div class="warning-box">
+        <h3 style="color: #ff4d4d; margin-bottom: 10px;">Danger Zone</h3>
+        <button class="delete-btn" style="width: 100%;" onclick="adminWipeLeaderboards()">WIPE ALL LEADERBOARDS</button>
+      </div>
+
+      <div class="modal-actions" style="justify-content: flex-end; margin-top: 20px;">
+        <button class="action-btn" onclick="closeModal('admin-modal')">Close Panel</button>
       </div>
     </div>
   </div>
@@ -140,7 +172,7 @@
       <h2 id="lb-title">Global Top Scores</h2>
       <div id="lb-content" style="min-height: 150px; margin-bottom: 20px;">Loading scores...</div>
       <div style="text-align: right;">
-        <button class="action-btn" onclick="closeLb()">Close</button>
+        <button class="action-btn" onclick="closeModal('lb-modal')">Close</button>
       </div>
     </div>
   </div>
@@ -149,9 +181,12 @@
   <div id="hub-screen" class="screen">
     <div class="hub-header">
       <div class="hub-title">EVIL WIZARD</div>
-      <div class="hub-user" onclick="switchScreen('profile-screen')">
-        <span id="current-user-name">Player</span>
-        <div id="current-user-avatar" class="hub-user-avatar"></div>
+      <div class="header-controls">
+        <button class="action-btn hidden" id="admin-btn" style="background: #8c00ff;" onclick="openAdminPanel()">⚙️ Admin</button>
+        <div class="hub-user" onclick="switchScreen('profile-screen')">
+          <span id="current-user-name">Player</span>
+          <div id="current-user-avatar" class="hub-user-avatar"></div>
+        </div>
       </div>
     </div>
     <div class="game-grid" id="playable-grid"></div>
@@ -166,7 +201,6 @@
         <button class="action-btn" style="background: #e4b61a; color: black;" onclick="showLeaderboard()">🏆 Leaderboard</button>
       </div>
 
-      <!-- Unified Canvas -->
       <div id="game-canvas-wrap" class="game-container hidden">
         <canvas id="cvs"></canvas>
         <div id="cvs-hint" class="controls-hint"></div>
@@ -174,11 +208,8 @@
 
       <!-- Tic-Tac-Toe -->
       <div id="game-ttt" class="game-container hidden"><div class="grid-3x3" id="ttt-board"></div><div id="ttt-status" class="controls-hint" style="font-size: 1.2rem; color: white;">Your turn! (X)</div></div>
-      <!-- Memory Match -->
       <div id="game-memory" class="game-container hidden"><div class="grid-4x4" id="mem-board"></div><div id="mem-status" class="controls-hint">Matches: 0/8</div></div>
-      <!-- Whack-a-Mole -->
       <div id="game-whack" class="game-container hidden"><div class="stats" id="whack-score">Score: 0 | Time: 30</div><div class="grid-3x3" id="whack-board"></div></div>
-      <!-- Simon Says -->
       <div id="game-simon" class="game-container hidden">
         <div class="stats" id="simon-score">Level: 1</div>
         <div class="grid-2x2">
@@ -186,24 +217,20 @@
           <div class="simon-btn" style="background:blue;" id="simon-2" onclick="simonClick(2)"></div><div class="simon-btn" style="background:yellow;" id="simon-3" onclick="simonClick(3)"></div>
         </div>
       </div>
-      <!-- Idle Clicker -->
       <div id="game-clicker" class="game-container hidden" style="text-align: center;"><div class="stats" id="clicker-score">Cash: $0</div><button class="big-btn" onclick="clickerAdd()">CLICK ME</button><div><button class="action-btn" onclick="clickerBuy()">Buy Auto-Clicker ($50)</button><div id="clicker-auto" class="controls-hint">Auto-Clickers: 0</div></div></div>
-      <!-- Reaction Time -->
       <div id="game-reaction" class="game-container hidden"><div class="reaction-box" id="reaction-box" onclick="reactionClick()">Click to Start</div><div id="reaction-score" class="controls-hint"></div></div>
-      <!-- Typing Test -->
       <div id="game-typing" class="game-container hidden" style="text-align: center;"><div class="stats" id="typing-stats">Score: 0 | Time: 60</div><div class="typing-word" id="typing-word">ready</div><input type="text" class="typing-input" id="typing-input" autocomplete="off" placeholder="Type here..."></div>
     </div>
   </div>
 
   <script>
     // ==========================================
-    // FIREBASE CLOUD SETUP (COMPAT SCRIPT)
+    // FIREBASE SETUP
     // ==========================================
     const firebaseConfig = {
       apiKey: "AIzaSyBVEFPRRfC9km-OlD7bFlJ576rn04DKGLg",
       authDomain: "wizard-co-537bf.firebaseapp.com",
       projectId: "wizard-co-537bf",
-      storageBucket: "wizard-co-537bf.firebasestorage.app",
       messagingSenderId: "36260203502",
       appId: "1:36260203502:web:fd0cf34bfd13dea3ab1cff"
     };
@@ -212,7 +239,7 @@
     const db = firebase.firestore();
 
     // ==========================================
-    // SYSTEM & CLOUD PROFILE ENGINE
+    // SYSTEM & PROFILE ENGINE
     // ==========================================
     const colors = ['#e50914', '#02bbee', '#e4b61a', '#30a13d', '#8c00ff'];
     let profiles = [];
@@ -230,7 +257,7 @@
     let ptr = {x:0, y:0, click:false};
     cvs.onmousedown = e => { let r=cvs.getBoundingClientRect(); ptr.x=e.clientX-r.left; ptr.y=e.clientY-r.top; ptr.click=true; };
 
-    // Fetch Profiles Live
+    // Fetch Profiles
     db.collection("profiles").onSnapshot((snapshot) => {
       if(snapshot.empty) {
         db.collection("profiles").add({ name: 'Adam', color: '#e50914', img: '' });
@@ -239,6 +266,10 @@
         document.getElementById('profile-heading').innerText = isManaging ? 'Manage Profiles:' : "Who's playing?";
         document.getElementById('manage-toggle-btn').classList.remove('hidden');
         renderProfiles();
+        
+        if (!document.getElementById('admin-modal').classList.contains('hidden')) {
+          renderAdminProfiles();
+        }
       }
     });
 
@@ -270,18 +301,26 @@
     }
 
     function handleProfileClick(id) {
-      if (isManaging) openEditModal(id);
-      else login(id);
+      if (isManaging) {
+        openEditModal(id);
+      } else {
+        const p = profiles.find(item => item.id === id);
+        if (p.name.toLowerCase() === 'adam') {
+          const pin = prompt("Enter PIN:");
+          if (pin !== "8888") { alert("Incorrect PIN! Access Denied."); return; }
+        }
+        login(id);
+      }
     }
 
     async function addP() {
       let n = prompt("Profile Name:");
       if (n && n.trim()) {
-        await db.collection("profiles").add({ 
-          name: n.trim(), 
-          color: colors[profiles.length % colors.length], 
-          img: '' 
-        });
+        const nameClean = n.trim();
+        if (nameClean.toLowerCase() === 'adam' && profiles.some(pr => pr.name.toLowerCase() === 'adam')) {
+          alert("The name 'Adam' is reserved for the Admin."); return;
+        }
+        await db.collection("profiles").add({ name: nameClean, color: colors[profiles.length % colors.length], img: '' });
       }
     }
 
@@ -292,35 +331,85 @@
       document.getElementById('edit-name').value = p.name;
       document.getElementById('edit-color').value = p.color || '#e50914';
       document.getElementById('edit-img').value = p.img || '';
+      document.getElementById('edit-file').value = ""; 
       document.getElementById('edit-modal').classList.remove('hidden');
     }
 
-    function closeModal() { document.getElementById('edit-modal').classList.add('hidden'); editingProfileId = null; }
+    function closeModal(modalId) { 
+      document.getElementById(modalId).classList.add('hidden'); 
+      if (modalId === 'edit-modal') editingProfileId = null; 
+    }
 
     async function saveProfileChanges() {
       const p = profiles.find(item => item.id === editingProfileId);
-      if (p) {
-        const newName = document.getElementById('edit-name').value.trim();
-        const newColor = document.getElementById('edit-color').value.trim();
-        const newImg = document.getElementById('edit-img').value.trim();
+      if (!p) return;
+
+      const btn = document.getElementById('save-prof-btn');
+      btn.innerText = "Compressing & Saving...";
+      btn.disabled = true;
+
+      const newName = document.getElementById('edit-name').value.trim();
+      const newColor = document.getElementById('edit-color').value.trim();
+      const fileInput = document.getElementById('edit-file').files[0];
+      let newImgUrl = document.getElementById('edit-img').value.trim();
+
+      try {
+        let finalImg = newImgUrl || p.img;
+
+        // Custom Canvas Image Compressor (Bypasses Firebase Storage entirely!)
+        if (fileInput) {
+          finalImg = await new Promise((resolve) => {
+            const reader = new FileReader();
+            reader.onload = (e) => {
+              const img = new Image();
+              img.onload = () => {
+                const canvas = document.createElement('canvas');
+                const MAX_SIZE = 150; // Compresses PFP to 150x150
+                canvas.width = MAX_SIZE;
+                canvas.height = MAX_SIZE;
+                const ctx = canvas.getContext('2d');
+                
+                // Crop cover to fit square
+                const scale = Math.max(MAX_SIZE / img.width, MAX_SIZE / img.height);
+                const x = (MAX_SIZE / 2) - (img.width / 2) * scale;
+                const y = (MAX_SIZE / 2) - (img.height / 2) * scale;
+                ctx.drawImage(img, x, y, img.width * scale, img.height * scale);
+                
+                // Convert down to a tiny Base64 text string to save in Firestore
+                resolve(canvas.toDataURL('image/jpeg', 0.8));
+              };
+              img.src = e.target.result;
+            };
+            reader.readAsDataURL(fileInput);
+          });
+        }
+
         await db.collection("profiles").doc(editingProfileId).set({ 
           name: newName || p.name, 
           color: newColor.startsWith('#') ? newColor : `#${newColor}`, 
-          img: newImg 
+          img: finalImg 
         }, { merge: true });
-      }
-      closeModal();
-    }
 
-    async function deleteCurrentProfile() {
-      if (profiles.length <= 1) { alert("You must keep at least one profile!"); return; }
-      await db.collection("profiles").doc(editingProfileId).delete();
-      closeModal();
+      } catch (err) {
+        console.error(err);
+        alert("Upload failed! Image might be corrupted.");
+      }
+
+      btn.innerText = "Save Profile";
+      btn.disabled = false;
+      closeModal('edit-modal');
     }
 
     function login(id) {
       activeProfile = profiles.find(p => p.id === id);
       document.getElementById('current-user-name').innerText = activeProfile.name;
+      
+      if (activeProfile.name.toLowerCase() === 'adam') {
+        document.getElementById('admin-btn').classList.remove('hidden');
+      } else {
+        document.getElementById('admin-btn').classList.add('hidden');
+      }
+
       const avatarEl = document.getElementById('current-user-avatar');
       if (activeProfile.img) {
         avatarEl.style.backgroundImage = `url('${activeProfile.img}')`;
@@ -335,6 +424,41 @@
     }
 
     function switchScreen(id) { document.querySelectorAll('.screen').forEach(s => s.classList.remove('active')); document.getElementById(id).classList.add('active'); }
+
+    // ==========================================
+    // ADMIN PANEL ENGINE
+    // ==========================================
+    function openAdminPanel() {
+      if (activeProfile.name.toLowerCase() !== 'adam') return;
+      const pin = prompt("Confirm Admin PIN:");
+      if (pin !== "8888") { alert("Access Denied!"); return; }
+      document.getElementById('admin-modal').classList.remove('hidden');
+      renderAdminProfiles();
+    }
+
+    function renderAdminProfiles() {
+      const list = document.getElementById('admin-profiles-list');
+      list.innerHTML = profiles.map(p => {
+        if (p.name.toLowerCase() === 'adam') {
+          return `<div class="admin-row"><span><strong>${p.name}</strong> (Admin)</span> <span style="color:var(--muted); font-size:0.8rem;">Undeletable</span></div>`;
+        } else {
+          return `<div class="admin-row"><span>${p.name}</span> <button class="delete-btn" onclick="adminDeleteProfile('${p.id}')">Delete</button></div>`;
+        }
+      }).join('');
+    }
+
+    async function adminDeleteProfile(id) {
+      if (confirm("Are you sure you want to permanently delete this profile?")) {
+        await db.collection("profiles").doc(id).delete();
+      }
+    }
+
+    async function adminWipeLeaderboards() {
+      if (prompt("Type WIPE to delete all global high scores permanently.") !== "WIPE") return;
+      const snap = await db.collection("scores").get();
+      snap.forEach(doc => { db.collection("scores").doc(doc.id).delete(); });
+      alert("Leaderboards wiped successfully.");
+    }
 
     // ==========================================
     // CLOUD LEADERBOARD ENGINE
@@ -380,11 +504,9 @@
         `).join('');
       }
     }
-    
-    function closeLb() { document.getElementById('lb-modal').classList.add('hidden'); }
 
     // ==========================================
-    // GAMES HUB
+    // GAMES HUB & LOGIC
     // ==========================================
     const games = [
       { id: 'snake', t: 'Snake', e: '🐍', bg: '#1e3a29', type: 'cvs' }, { id: 'pong', t: 'Pong', e: '🏓', bg: '#3a201e', type: 'cvs' },
@@ -400,230 +522,28 @@
     document.getElementById('playable-grid').innerHTML = games.map(g => `<div class="game-card" style="background:${g.bg}" onclick="launch('${g.id}', '${g.t}', '${g.type}')"><div class="game-bg"></div><div class="game-emoji">${g.e}</div><div class="game-title">${g.t}</div></div>`).join('');
 
     function launch(id, title, type) {
-      cancelAnimationFrame(loopInt); clearInterval(logicInt);
-      activeGameId = id;
-      document.getElementById('active-game-title').innerText = title;
+      cancelAnimationFrame(loopInt); clearInterval(logicInt); activeGameId = id; document.getElementById('active-game-title').innerText = title;
       document.querySelectorAll('.game-container').forEach(c => c.classList.add('hidden'));
-      if(type === 'cvs') document.getElementById('game-canvas-wrap').classList.remove('hidden');
-      else document.getElementById(`game-${id}`).classList.remove('hidden');
-      switchScreen('game-screen');
-      ptr.click = false; keys = {}; window['init_' + id]();
+      if(type === 'cvs') document.getElementById('game-canvas-wrap').classList.remove('hidden'); else document.getElementById(`game-${id}`).classList.remove('hidden');
+      switchScreen('game-screen'); ptr.click = false; keys = {}; window['init_' + id]();
     }
     function exitGame() { cancelAnimationFrame(loopInt); clearInterval(logicInt); switchScreen('hub-screen'); }
 
-    // ==========================================
-    // CANVAS GAMES (1-8)
-    // ==========================================
-    function init_snake() {
-      cvs.width=400; cvs.height=400; document.getElementById('cvs-hint').innerHTML = "Arrow Keys / WASD";
-      let s={x:160, y:160, dx:20, dy:0, c:[], m:4}, app={x:320, y:320}, cnt=0, over=false;
-      function loop() {
-        loopInt = requestAnimationFrame(loop); if(++cnt<5) return; cnt=0; ctx.clearRect(0,0,400,400);
-        if((keys['ArrowLeft']||keys['a']) && s.dx===0) {s.dx=-20; s.dy=0;} else if((keys['ArrowUp']||keys['w']) && s.dy===0) {s.dy=-20; s.dx=0;} else if((keys['ArrowRight']||keys['d']) && s.dx===0) {s.dx=20; s.dy=0;} else if((keys['ArrowDown']||keys['s']) && s.dy===0) {s.dy=20; s.dx=0;}
-        s.x+=s.dx; s.y+=s.dy; if(s.x<0) s.x=380; if(s.x>380) s.x=0; if(s.y<0) s.y=380; if(s.y>380) s.y=0;
-        s.c.unshift({x:s.x,y:s.y}); if(s.c.length>s.m) s.c.pop();
-        ctx.fillStyle='red'; ctx.fillRect(app.x, app.y, 19, 19); ctx.fillStyle='lime';
-        s.c.forEach((c,i)=>{ ctx.fillRect(c.x,c.y,19,19);
-          if(c.x===app.x && c.y===app.y) {s.m++; app.x=Math.floor(Math.random()*20)*20; app.y=Math.floor(Math.random()*20)*20;}
-          for(let j=i+1; j<s.c.length; j++) if(c.x===s.c[j].x && c.y===s.c[j].y) { if(!over){ submitScore('snake', s.m-4); over=true; } s={x:160,y:160,dx:20,dy:0,c:[],m:4}; over=false; }
-        });
-      } loop();
-    }
-
-    function init_pong() {
-      cvs.width=600; cvs.height=400; document.getElementById('cvs-hint').innerHTML = "W / S or Up / Down";
-      let pY=150, aiY=150, bX=300, bY=200, dx=5, dy=3;
-      function loop() {
-        loopInt = requestAnimationFrame(loop); ctx.clearRect(0,0,600,400);
-        if((keys['ArrowUp']||keys['w']) && pY>0) pY-=6; if((keys['ArrowDown']||keys['s']) && pY<320) pY+=6;
-        if(aiY+40 < bY-10) aiY+=4; else if(aiY+40 > bY+10) aiY-=4;
-        bX+=dx; bY+=dy; if(bY<=0 || bY>=400) dy=-dy;
-        if((bX<=20 && bY>=pY && bY<=pY+80) || (bX>=580 && bY>=aiY && bY<=aiY+80)) dx=-dx;
-        if(bX<0 || bX>600) {bX=300; bY=200; dx=-dx;}
-        ctx.fillStyle='white'; ctx.fillRect(10,pY,10,80); ctx.fillRect(580,aiY,10,80); ctx.fillRect(bX-5,bY-5,10,10);
-      } loop();
-    }
-
-    function init_flappy() {
-      cvs.width=400; cvs.height=500; document.getElementById('cvs-hint').innerHTML = "Space or Click to jump";
-      let y=250, v=0, p=[], f=0, sc=0, over=false;
-      function loop() {
-        loopInt = requestAnimationFrame(loop); ctx.clearRect(0,0,400,500);
-        if((keys[' ']||ptr.click) && !over) { v=-6; ptr.click=false; }
-        if(over && ptr.click) { y=250; v=0; p=[]; sc=0; over=false; ptr.click=false; }
-        if(!over) { v+=0.3; y+=v; f++; if(f%90===0) {let h=Math.floor(Math.random()*200)+50; p.push({x:400, t:h, b:h+120});} p.forEach(i=>i.x-=3); p=p.filter(i=>i.x>-50); }
-        ctx.fillStyle='yellow'; ctx.fillRect(50,y,30,30); ctx.fillStyle='green';
-        p.forEach(i=>{ ctx.fillRect(i.x,0,40,i.t); ctx.fillRect(i.x,i.b,40,500-i.b);
-          if((50<i.x+40 && 80>i.x && (y<i.t || y+30>i.b)) || y>500) { if(!over) submitScore('flappy', sc); over=true; }
-          if(i.x===47) sc++; });
-        ctx.fillStyle='white'; ctx.font='20px Arial'; ctx.fillText('Score: '+sc, 10, 30);
-        if(over) { ctx.fillStyle='red'; ctx.fillText('GAME OVER - Click to Restart', 60, 250); }
-      } loop();
-    }
-
-    function init_breakout() {
-      cvs.width=600; cvs.height=400; document.getElementById('cvs-hint').innerHTML = "Left / Right or A / D";
-      let px=250, bx=300, by=300, bdx=4, bdy=-4, br=[], sc=0;
-      for(let r=0;r<4;r++) for(let c=0;c<8;c++) br.push({x:c*70+25, y:r*30+30, st:1});
-      function loop() {
-        loopInt = requestAnimationFrame(loop); ctx.clearRect(0,0,600,400);
-        if((keys['ArrowLeft']||keys['a']) && px>0) px-=7; if((keys['ArrowRight']||keys['d']) && px<500) px+=7;
-        bx+=bdx; by+=bdy; if(bx<=0 || bx>=600) bdx=-bdx; if(by<=0) bdy=-bdy;
-        if(by>=380 && bx>=px && bx<=px+100) bdy=-bdy; 
-        if(by>400) { submitScore('breakout', sc); bx=300; by=300; bdx=4; bdy=-4; sc=0; br.forEach(b=>b.st=1); }
-        ctx.fillStyle='#02bbee'; ctx.fillRect(px, 380, 100, 10); ctx.fillStyle='white'; ctx.beginPath(); ctx.arc(bx,by,6,0,Math.PI*2); ctx.fill();
-        br.forEach(b=>{ if(b.st) { ctx.fillStyle='#e50914'; ctx.fillRect(b.x,b.y,65,20);
-          if(bx>b.x && bx<b.x+65 && by>b.y && by<b.y+20) {bdy=-bdy; b.st=0; sc++;} }});
-        ctx.fillStyle='white'; ctx.font='16px Arial'; ctx.fillText('Score: '+sc, 10, 20);
-      } loop();
-    }
-
-    function init_dodge() {
-      cvs.width=400; cvs.height=500; document.getElementById('cvs-hint').innerHTML = "Left / Right to dodge";
-      let px=180, en=[], f=0, sc=0, over=false;
-      function loop() {
-        loopInt = requestAnimationFrame(loop); ctx.clearRect(0,0,400,500);
-        if((keys['ArrowLeft']||keys['a']) && px>0) px-=6; if((keys['ArrowRight']||keys['d']) && px<360) px+=6;
-        if(over && ptr.click) { px=180; en=[]; sc=0; over=false; ptr.click=false; }
-        if(!over) { f++; if(f%(Math.max(10, 40-Math.floor(sc/5)))===0) en.push({x:Math.random()*360, y:-40}); en.forEach(e=>{ e.y+=5; if(e.y>460 && e.y<500 && px<e.x+40 && px+40>e.x) { if(!over) submitScore('dodge', sc); over=true; } }); en=en.filter(e=>{if(e.y>500){sc++; return false;} return true;}); }
-        ctx.fillStyle='#02bbee'; ctx.fillRect(px, 460, 40, 40); ctx.fillStyle='red'; en.forEach(e=>ctx.fillRect(e.x, e.y, 40, 40));
-        ctx.fillStyle='white'; ctx.font='20px Arial'; ctx.fillText('Score: '+sc, 10, 30);
-        if(over) { ctx.fillStyle='red'; ctx.fillText('GAME OVER - Click to Restart', 60, 250); }
-      } loop();
-    }
-
-    function init_space() {
-      cvs.width=400; cvs.height=500; document.getElementById('cvs-hint').innerHTML = "Left/Right + Space to Shoot";
-      let px=180, b=[], en=[], f=0, sc=0, over=false;
-      function loop() {
-        loopInt = requestAnimationFrame(loop); ctx.clearRect(0,0,400,500);
-        if((keys['ArrowLeft']||keys['a']) && px>0) px-=5; if((keys['ArrowRight']||keys['d']) && px<360) px+=5;
-        if(keys[' '] && f%10===0 && !over) b.push({x:px+18, y:450}); f++;
-        if(f%40===0 && !over) en.push({x:Math.random()*360, y:-30});
-        if(over && ptr.click) { px=180; b=[]; en=[]; sc=0; over=false; ptr.click=false; }
-        
-        ctx.fillStyle='yellow'; b.forEach((bu,i)=>{ bu.y-=8; ctx.fillRect(bu.x,bu.y,4,10); if(bu.y<0) b.splice(i,1); });
-        ctx.fillStyle='red'; en.forEach((e,i)=>{ e.y+=3; ctx.fillRect(e.x,e.y,30,30); if(e.y>500) { if(!over) submitScore('space', sc); over=true; } });
-        b.forEach((bu,bi)=>{ en.forEach((e,ei)=>{ if(bu.x>e.x && bu.x<e.x+30 && bu.y>e.y && bu.y<e.y+30) { b.splice(bi,1); en.splice(ei,1); sc+=10; }})});
-        ctx.fillStyle='#02bbee'; ctx.beginPath(); ctx.moveTo(px+20,440); ctx.lineTo(px,480); ctx.lineTo(px+40,480); ctx.fill();
-        ctx.fillStyle='white'; ctx.font='20px Arial'; ctx.fillText('Score: '+sc, 10, 30);
-        if(over) { ctx.fillStyle='red'; ctx.fillText('GAME OVER - Click to Restart', 60, 250); }
-      } loop();
-    }
-
-    function init_catch() {
-      cvs.width=600; cvs.height=400; document.getElementById('cvs-hint').innerHTML = "Left/Right to catch apples";
-      let px=250, a=[], f=0, sc=0, over=false;
-      function loop() {
-        loopInt = requestAnimationFrame(loop); ctx.clearRect(0,0,600,400);
-        if((keys['ArrowLeft']||keys['a']) && px>0) px-=7; if((keys['ArrowRight']||keys['d']) && px<500) px+=7;
-        if(over && ptr.click) { px=250; a=[]; sc=0; over=false; ptr.click=false; }
-        if(!over) { f++; if(f%30===0) a.push({x:Math.random()*560, y:-20}); }
-        ctx.fillStyle='red'; a.forEach((ap,i)=>{ ap.y+=4; ctx.beginPath(); ctx.arc(ap.x,ap.y,12,0,Math.PI*2); ctx.fill(); 
-          if(ap.y>370 && ap.y<400 && ap.x>px && ap.x<px+100) { sc++; a.splice(i,1); } 
-          else if(ap.y>400) { if(!over) submitScore('catch', sc); over=true; }
-        });
-        ctx.fillStyle='#8b4513'; ctx.fillRect(px, 370, 100, 30);
-        ctx.fillStyle='white'; ctx.font='20px Arial'; ctx.fillText('Score: '+sc, 10, 30);
-        if(over) { ctx.fillStyle='red'; ctx.fillText('GAME OVER - Click to Restart', 150, 200); }
-      } loop();
-    }
-
-    function init_reflex() {
-      cvs.width=600; cvs.height=400; document.getElementById('cvs-hint').innerHTML = "Click targets fast!";
-      let t={x:300, y:200, r:30}, sc=0, tm=30, f=0;
-      function loop() {
-        loopInt = requestAnimationFrame(loop); ctx.clearRect(0,0,600,400);
-        if(ptr.click) { ptr.click=false; if(tm<=0) {tm=30;sc=0;} else if(Math.hypot(ptr.x-t.x, ptr.y-t.y)<t.r) { sc++; t.x=Math.random()*500+50; t.y=Math.random()*300+50; t.r=Math.max(10,30-sc); } }
-        if(tm>0) { f++; if(f%60===0) tm--; ctx.fillStyle='#30a13d'; ctx.beginPath(); ctx.arc(t.x,t.y,t.r,0,Math.PI*2); ctx.fill(); } 
-        else { ctx.fillStyle='red'; ctx.font='30px Arial'; ctx.fillText('Time Up! Click to Restart', 130, 200); if(tm===0 && f%60===1) submitScore('reflex', sc); }
-        ctx.fillStyle='white'; ctx.font='20px Arial'; ctx.fillText('Score: '+sc+' | Time: '+tm, 10, 30);
-      } loop();
-    }
-
-    // ==========================================
-    // DOM GAMES (9-15)
-    // ==========================================
-    let ttt=['','','','','','','','',''], tttA=true;
-    function init_ttt() { ttt=['','','','','','','','','']; tttA=true; document.getElementById('ttt-status').innerText='Your turn! (X)'; document.getElementById('ttt-board').innerHTML = ttt.map((_,i)=>`<div class="cell" id="c${i}" onclick="tttClick(${i})"></div>`).join(''); }
-    function tttClick(i) {
-      if(ttt[i]!==''||!tttA) return; ttt[i]='X'; document.getElementById(`c${i}`).innerText='X';
-      if(tttWin('X')) return document.getElementById('ttt-status').innerText='🎉 You Won!'; if(!ttt.includes('')) return document.getElementById('ttt-status').innerText='🤝 Draw!';
-      tttA=false; document.getElementById('ttt-status').innerText='Thinking...';
-      setTimeout(()=>{
-        let e=ttt.map((v,i)=>v===''?i:null).filter(v=>v!==null), m=e[Math.floor(Math.random()*e.length)]; ttt[m]='O'; document.getElementById(`c${m}`).innerText='O'; document.getElementById(`c${m}`).style.color='red';
-        if(tttWin('O')) document.getElementById('ttt-status').innerText='💀 Computer Won!'; else if(!ttt.includes('')) document.getElementById('ttt-status').innerText='🤝 Draw!'; else { document.getElementById('ttt-status').innerText='Your turn! (X)'; tttA=true; }
-      }, 400);
-    }
-    function tttWin(p) { return [[0,1,2],[3,4,5],[6,7,8],[0,3,6],[1,4,7],[2,5,8],[0,4,8],[2,4,6]].some(w=>w.every(i=>ttt[i]===p)); }
-
-    let memArr=[], memF=[], memM=0;
-    function init_memory() {
-      let em = ['🍎','🍌','🍇','🍉','🍓','🍒','🍑','🥭']; memArr = [...em, ...em].sort(()=>Math.random()-0.5); memF=[]; memM=0;
-      document.getElementById('mem-status').innerText = 'Matches: 0/8';
-      document.getElementById('mem-board').innerHTML = memArr.map((_,i)=>`<div class="cell mem-cell" id="m${i}" onclick="memClick(${i})">?</div>`).join('');
-    }
-    function memClick(i) {
-      if(memF.length===2 || memF.includes(i) || document.getElementById(`m${i}`).innerText!=='?') return;
-      document.getElementById(`m${i}`).innerText = memArr[i]; memF.push(i);
-      if(memF.length===2) {
-        if(memArr[memF[0]]===memArr[memF[1]]) { memM++; document.getElementById('mem-status').innerText=`Matches: ${memM}/8`; memF=[]; if(memM===8) document.getElementById('mem-status').innerText='🎉 You Won!'; }
-        else setTimeout(()=>{ document.getElementById(`m${memF[0]}`).innerText='?'; document.getElementById(`m${memF[1]}`).innerText='?'; memF=[]; }, 600);
-      }
-    }
-
-    let wSc=0, wTm=30;
-    function init_whack() {
-      wSc=0; wTm=30; document.getElementById('whack-board').innerHTML = Array(9).fill().map((_,i)=>`<div class="cell whack-cell" id="w${i}" onclick="whClick(${i})"></div>`).join('');
-      logicInt = setInterval(()=>{
-        wTm--; document.getElementById('whack-score').innerText = `Score: ${wSc} | Time: ${wTm}`;
-        if(wTm<=0) { submitScore('whack', wSc); return clearInterval(logicInt); }
-        document.querySelectorAll('.whack-cell').forEach(c=>c.classList.remove('mole'));
-        document.getElementById(`w${Math.floor(Math.random()*9)}`).classList.add('mole');
-      }, 1000);
-    }
-    function whClick(i) { let el = document.getElementById(`w${i}`); if(el.classList.contains('mole') && wTm>0) { wSc++; el.classList.remove('mole'); el.style.background='white'; setTimeout(()=>el.style.background='', 100); } }
-
-    let simSeq=[], simStep=0, simA=false;
-    function init_simon() { simSeq=[]; simStep=0; simA=false; document.getElementById('simon-score').innerText='Watch...'; setTimeout(simNext, 1000); }
-    function simNext() {
-      simSeq.push(Math.floor(Math.random()*4)); simStep=0; document.getElementById('simon-score').innerText=`Level: ${simSeq.length}`;
-      let i=0; let int = setInterval(()=>{
-        if(i>=simSeq.length) { clearInterval(int); simA=true; return; }
-        let id=`simon-${simSeq[i]}`; document.getElementById(id).classList.add('active'); setTimeout(()=>document.getElementById(id).classList.remove('active'), 400); i++;
-      }, 800);
-    }
-    function simonClick(i) {
-      if(!simA) return;
-      document.getElementById(`simon-${i}`).classList.add('active'); setTimeout(()=>document.getElementById(`simon-${i}`).classList.remove('active'), 200);
-      if(simSeq[simStep]===i) { simStep++; if(simStep===simSeq.length) { simA=false; submitScore('simon', simSeq.length); setTimeout(simNext, 1000); } }
-      else { document.getElementById('simon-score').innerText=`Game Over (Level ${simSeq.length}) - Restarting`; simA=false; setTimeout(init_simon, 2000); }
-    }
-
-    let clkS=0, clkA=0;
-    function init_clicker() { clkS=0; clkA=0; updateClk(); logicInt = setInterval(()=>{ clkS+=clkA; updateClk(); if(clkA>0) submitScore('clicker', clkS); }, 1000); }
-    function clickerAdd() { clkS++; updateClk(); submitScore('clicker', clkS); }
-    function clickerBuy() { if(clkS>=50) { clkS-=50; clkA++; updateClk(); } }
-    function updateClk() { document.getElementById('clicker-score').innerText=`Cash: $${clkS}`; document.getElementById('clicker-auto').innerText=`Auto-Clickers: ${clkA}`; }
-
-    let rxSt=0, rxTm=0;
-    function init_reaction() { rxSt=0; let b=document.getElementById('reaction-box'); b.style.background='#e50914'; b.innerText='Click to Start'; document.getElementById('reaction-score').innerText=''; }
-    function reactionClick() {
-      let b=document.getElementById('reaction-box');
-      if(rxSt===0) { rxSt=1; b.style.background='#e4b61a'; b.innerText='Wait for Green...'; setTimeout(()=>{ if(rxSt===1) {rxSt=2; b.style.background='#30a13d'; b.innerText='CLICK NOW!'; rxTm=Date.now();} }, Math.random()*2000+1000); }
-      else if(rxSt===1) { rxSt=0; document.getElementById('reaction-score').innerText='Too early!'; init_reaction(); }
-      else if(rxSt===2) { rxSt=0; let t = Date.now()-rxTm; document.getElementById('reaction-score').innerText=`Time: ${t}ms`; submitScore('reaction', t); b.style.background='#02bbee'; b.innerText='Click to Restart'; }
-    }
-
-    let typWords = ['javascript','developer','function','variable','array','object','string','boolean','github','domain','server','client','browser','console','return','window','document','event','timeout','interval'], typSc=0, typTm=60;
-    function init_typing() {
-      typSc=0; typTm=60; document.getElementById('typing-input').value=''; setWord();
-      logicInt = setInterval(()=>{ typTm--; document.getElementById('typing-stats').innerText=`Score: ${typSc} | Time: ${typTm}`; if(typTm<=0) {clearInterval(logicInt); submitScore('typing', typSc); document.getElementById('typing-word').innerText='Game Over!'; document.getElementById('typing-input').disabled=true;} }, 1000);
-      document.getElementById('typing-input').disabled=false; document.getElementById('typing-input').focus();
-    }
-    function setWord() { document.getElementById('typing-word').innerText = typWords[Math.floor(Math.random()*typWords.length)]; }
-    document.getElementById('typing-input').addEventListener('input', function(e) { if(e.target.value.trim() === document.getElementById('typing-word').innerText && typTm>0) { typSc++; e.target.value=''; setWord(); document.getElementById('typing-stats').innerText=`Score: ${typSc} | Time: ${typTm}`; } });
-
+    function init_snake() { cvs.width=400; cvs.height=400; document.getElementById('cvs-hint').innerHTML = "Arrow Keys / WASD"; let s={x:160, y:160, dx:20, dy:0, c:[], m:4}, app={x:320, y:320}, cnt=0, over=false; function loop() { loopInt = requestAnimationFrame(loop); if(++cnt<5) return; cnt=0; ctx.clearRect(0,0,400,400); if((keys['ArrowLeft']||keys['a']) && s.dx===0) {s.dx=-20; s.dy=0;} else if((keys['ArrowUp']||keys['w']) && s.dy===0) {s.dy=-20; s.dx=0;} else if((keys['ArrowRight']||keys['d']) && s.dx===0) {s.dx=20; s.dy=0;} else if((keys['ArrowDown']||keys['s']) && s.dy===0) {s.dy=20; s.dx=0;} s.x+=s.dx; s.y+=s.dy; if(s.x<0) s.x=380; if(s.x>380) s.x=0; if(s.y<0) s.y=380; if(s.y>380) s.y=0; s.c.unshift({x:s.x,y:s.y}); if(s.c.length>s.m) s.c.pop(); ctx.fillStyle='red'; ctx.fillRect(app.x, app.y, 19, 19); ctx.fillStyle='lime'; s.c.forEach((c,i)=>{ ctx.fillRect(c.x,c.y,19,19); if(c.x===app.x && c.y===app.y) {s.m++; app.x=Math.floor(Math.random()*20)*20; app.y=Math.floor(Math.random()*20)*20;} for(let j=i+1; j<s.c.length; j++) if(c.x===s.c[j].x && c.y===s.c[j].y) { if(!over){ submitScore('snake', s.m-4); over=true; } s={x:160,y:160,dx:20,dy:0,c:[],m:4}; over=false; } }); } loop(); }
+    function init_pong() { cvs.width=600; cvs.height=400; document.getElementById('cvs-hint').innerHTML = "W / S or Up / Down"; let pY=150, aiY=150, bX=300, bY=200, dx=5, dy=3; function loop() { loopInt = requestAnimationFrame(loop); ctx.clearRect(0,0,600,400); if((keys['ArrowUp']||keys['w']) && pY>0) pY-=6; if((keys['ArrowDown']||keys['s']) && pY<320) pY+=6; if(aiY+40 < bY-10) aiY+=4; else if(aiY+40 > bY+10) aiY-=4; bX+=dx; bY+=dy; if(bY<=0 || bY>=400) dy=-dy; if((bX<=20 && bY>=pY && bY<=pY+80) || (bX>=580 && bY>=aiY && bY<=aiY+80)) dx=-dx; if(bX<0 || bX>600) {bX=300; bY=200; dx=-dx;} ctx.fillStyle='white'; ctx.fillRect(10,pY,10,80); ctx.fillRect(580,aiY,10,80); ctx.fillRect(bX-5,bY-5,10,10); } loop(); }
+    function init_flappy() { cvs.width=400; cvs.height=500; document.getElementById('cvs-hint').innerHTML = "Space or Click to jump"; let y=250, v=0, p=[], f=0, sc=0, over=false; function loop() { loopInt = requestAnimationFrame(loop); ctx.clearRect(0,0,400,500); if((keys[' ']||ptr.click) && !over) { v=-6; ptr.click=false; } if(over && ptr.click) { y=250; v=0; p=[]; sc=0; over=false; ptr.click=false; } if(!over) { v+=0.3; y+=v; f++; if(f%90===0) {let h=Math.floor(Math.random()*200)+50; p.push({x:400, t:h, b:h+120});} p.forEach(i=>i.x-=3); p=p.filter(i=>i.x>-50); } ctx.fillStyle='yellow'; ctx.fillRect(50,y,30,30); ctx.fillStyle='green'; p.forEach(i=>{ ctx.fillRect(i.x,0,40,i.t); ctx.fillRect(i.x,i.b,40,500-i.b); if((50<i.x+40 && 80>i.x && (y<i.t || y+30>i.b)) || y>500) { if(!over) submitScore('flappy', sc); over=true; } if(i.x===47) sc++; }); ctx.fillStyle='white'; ctx.font='20px Arial'; ctx.fillText('Score: '+sc, 10, 30); if(over) { ctx.fillStyle='red'; ctx.fillText('GAME OVER - Click to Restart', 60, 250); } } loop(); }
+    function init_breakout() { cvs.width=600; cvs.height=400; document.getElementById('cvs-hint').innerHTML = "Left / Right or A / D"; let px=250, bx=300, by=300, bdx=4, bdy=-4, br=[], sc=0; for(let r=0;r<4;r++) for(let c=0;c<8;c++) br.push({x:c*70+25, y:r*30+30, st:1}); function loop() { loopInt = requestAnimationFrame(loop); ctx.clearRect(0,0,600,400); if((keys['ArrowLeft']||keys['a']) && px>0) px-=7; if((keys['ArrowRight']||keys['d']) && px<500) px+=7; bx+=bdx; by+=bdy; if(bx<=0 || bx>=600) bdx=-bdx; if(by<=0) bdy=-bdy; if(by>=380 && bx>=px && bx<=px+100) bdy=-bdy; if(by>400) { submitScore('breakout', sc); bx=300; by=300; bdx=4; bdy=-4; sc=0; br.forEach(b=>b.st=1); } ctx.fillStyle='#02bbee'; ctx.fillRect(px, 380, 100, 10); ctx.fillStyle='white'; ctx.beginPath(); ctx.arc(bx,by,6,0,Math.PI*2); ctx.fill(); br.forEach(b=>{ if(b.st) { ctx.fillStyle='#e50914'; ctx.fillRect(b.x,b.y,65,20); if(bx>b.x && bx<b.x+65 && by>b.y && by<b.y+20) {bdy=-bdy; b.st=0; sc++;} }}); ctx.fillStyle='white'; ctx.font='16px Arial'; ctx.fillText('Score: '+sc, 10, 20); } loop(); }
+    function init_dodge() { cvs.width=400; cvs.height=500; document.getElementById('cvs-hint').innerHTML = "Left / Right to dodge"; let px=180, en=[], f=0, sc=0, over=false; function loop() { loopInt = requestAnimationFrame(loop); ctx.clearRect(0,0,400,500); if((keys['ArrowLeft']||keys['a']) && px>0) px-=6; if((keys['ArrowRight']||keys['d']) && px<360) px+=6; if(over && ptr.click) { px=180; en=[]; sc=0; over=false; ptr.click=false; } if(!over) { f++; if(f%(Math.max(10, 40-Math.floor(sc/5)))===0) en.push({x:Math.random()*360, y:-40}); en.forEach(e=>{ e.y+=5; if(e.y>460 && e.y<500 && px<e.x+40 && px+40>e.x) { if(!over) submitScore('dodge', sc); over=true; } }); en=en.filter(e=>{if(e.y>500){sc++; return false;} return true;}); } ctx.fillStyle='#02bbee'; ctx.fillRect(px, 460, 40, 40); ctx.fillStyle='red'; en.forEach(e=>ctx.fillRect(e.x, e.y, 40, 40)); ctx.fillStyle='white'; ctx.font='20px Arial'; ctx.fillText('Score: '+sc, 10, 30); if(over) { ctx.fillStyle='red'; ctx.fillText('GAME OVER - Click to Restart', 60, 250); } } loop(); }
+    function init_space() { cvs.width=400; cvs.height=500; document.getElementById('cvs-hint').innerHTML = "Left/Right + Space to Shoot"; let px=180, b=[], en=[], f=0, sc=0, over=false; function loop() { loopInt = requestAnimationFrame(loop); ctx.clearRect(0,0,400,500); if((keys['ArrowLeft']||keys['a']) && px>0) px-=5; if((keys['ArrowRight']||keys['d']) && px<360) px+=5; if(keys[' '] && f%10===0 && !over) b.push({x:px+18, y:450}); f++; if(f%40===0 && !over) en.push({x:Math.random()*360, y:-30}); if(over && ptr.click) { px=180; b=[]; en=[]; sc=0; over=false; ptr.click=false; } ctx.fillStyle='yellow'; b.forEach((bu,i)=>{ bu.y-=8; ctx.fillRect(bu.x,bu.y,4,10); if(bu.y<0) b.splice(i,1); }); ctx.fillStyle='red'; en.forEach((e,i)=>{ e.y+=3; ctx.fillRect(e.x,e.y,30,30); if(e.y>500) { if(!over) submitScore('space', sc); over=true; } }); b.forEach((bu,bi)=>{ en.forEach((e,ei)=>{ if(bu.x>e.x && bu.x<e.x+30 && bu.y>e.y && bu.y<e.y+30) { b.splice(bi,1); en.splice(ei,1); sc+=10; }})}); ctx.fillStyle='#02bbee'; ctx.beginPath(); ctx.moveTo(px+20,440); ctx.lineTo(px,480); ctx.lineTo(px+40,480); ctx.fill(); ctx.fillStyle='white'; ctx.font='20px Arial'; ctx.fillText('Score: '+sc, 10, 30); if(over) { ctx.fillStyle='red'; ctx.fillText('GAME OVER - Click to Restart', 60, 250); } } loop(); }
+    function init_catch() { cvs.width=600; cvs.height=400; document.getElementById('cvs-hint').innerHTML = "Left/Right to catch apples"; let px=250, a=[], f=0, sc=0, over=false; function loop() { loopInt = requestAnimationFrame(loop); ctx.clearRect(0,0,600,400); if((keys['ArrowLeft']||keys['a']) && px>0) px-=7; if((keys['ArrowRight']||keys['d']) && px<500) px+=7; if(over && ptr.click) { px=250; a=[]; sc=0; over=false; ptr.click=false; } if(!over) { f++; if(f%30===0) a.push({x:Math.random()*560, y:-20}); } ctx.fillStyle='red'; a.forEach((ap,i)=>{ ap.y+=4; ctx.beginPath(); ctx.arc(ap.x,ap.y,12,0,Math.PI*2); ctx.fill(); if(ap.y>370 && ap.y<400 && ap.x>px && ap.x<px+100) { sc++; a.splice(i,1); } else if(ap.y>400) { if(!over) submitScore('catch', sc); over=true; } }); ctx.fillStyle='#8b4513'; ctx.fillRect(px, 370, 100, 30); ctx.fillStyle='white'; ctx.font='20px Arial'; ctx.fillText('Score: '+sc, 10, 30); if(over) { ctx.fillStyle='red'; ctx.fillText('GAME OVER - Click to Restart', 150, 200); } } loop(); }
+    function init_reflex() { cvs.width=600; cvs.height=400; document.getElementById('cvs-hint').innerHTML = "Click targets fast!"; let t={x:300, y:200, r:30}, sc=0, tm=30, f=0; function loop() { loopInt = requestAnimationFrame(loop); ctx.clearRect(0,0,600,400); if(ptr.click) { ptr.click=false; if(tm<=0) {tm=30;sc=0;} else if(Math.hypot(ptr.x-t.x, ptr.y-t.y)<t.r) { sc++; t.x=Math.random()*500+50; t.y=Math.random()*300+50; t.r=Math.max(10,30-sc); } } if(tm>0) { f++; if(f%60===0) tm--; ctx.fillStyle='#30a13d'; ctx.beginPath(); ctx.arc(t.x,t.y,t.r,0,Math.PI*2); ctx.fill(); } else { ctx.fillStyle='red'; ctx.font='30px Arial'; ctx.fillText('Time Up! Click to Restart', 130, 200); if(tm===0 && f%60===1) submitScore('reflex', sc); } ctx.fillStyle='white'; ctx.font='20px Arial'; ctx.fillText('Score: '+sc+' | Time: '+tm, 10, 30); } loop(); }
+    let ttt=['','','','','','','','',''], tttA=true; function init_ttt() { ttt=['','','','','','','','','']; tttA=true; document.getElementById('ttt-status').innerText='Your turn! (X)'; document.getElementById('ttt-board').innerHTML = ttt.map((_,i)=>`<div class="cell" id="c${i}" onclick="tttClick(${i})"></div>`).join(''); } function tttClick(i) { if(ttt[i]!==''||!tttA) return; ttt[i]='X'; document.getElementById(`c${i}`).innerText='X'; if(tttWin('X')) return document.getElementById('ttt-status').innerText='🎉 You Won!'; if(!ttt.includes('')) return document.getElementById('ttt-status').innerText='🤝 Draw!'; tttA=false; document.getElementById('ttt-status').innerText='Thinking...'; setTimeout(()=>{ let e=ttt.map((v,i)=>v===''?i:null).filter(v=>v!==null), m=e[Math.floor(Math.random()*e.length)]; ttt[m]='O'; document.getElementById(`c${m}`).innerText='O'; document.getElementById(`c${m}`).style.color='red'; if(tttWin('O')) document.getElementById('ttt-status').innerText='💀 Computer Won!'; else if(!ttt.includes('')) document.getElementById('ttt-status').innerText='🤝 Draw!'; else { document.getElementById('ttt-status').innerText='Your turn! (X)'; tttA=true; } }, 400); } function tttWin(p) { return [[0,1,2],[3,4,5],[6,7,8],[0,3,6],[1,4,7],[2,5,8],[0,4,8],[2,4,6]].some(w=>w.every(i=>ttt[i]===p)); }
+    let memArr=[], memF=[], memM=0; function init_memory() { let em = ['🍎','🍌','🍇','🍉','🍓','🍒','🍑','🥭']; memArr = [...em, ...em].sort(()=>Math.random()-0.5); memF=[]; memM=0; document.getElementById('mem-status').innerText = 'Matches: 0/8'; document.getElementById('mem-board').innerHTML = memArr.map((_,i)=>`<div class="cell mem-cell" id="m${i}" onclick="memClick(${i})">?</div>`).join(''); } function memClick(i) { if(memF.length===2 || memF.includes(i) || document.getElementById(`m${i}`).innerText!=='?') return; document.getElementById(`m${i}`).innerText = memArr[i]; memF.push(i); if(memF.length===2) { if(memArr[memF[0]]===memArr[memF[1]]) { memM++; document.getElementById('mem-status').innerText=`Matches: ${memM}/8`; memF=[]; if(memM===8) document.getElementById('mem-status').innerText='🎉 You Won!'; } else setTimeout(()=>{ document.getElementById(`m${memF[0]}`).innerText='?'; document.getElementById(`m${memF[1]}`).innerText='?'; memF=[]; }, 600); } }
+    let wSc=0, wTm=30; function init_whack() { wSc=0; wTm=30; document.getElementById('whack-board').innerHTML = Array(9).fill().map((_,i)=>`<div class="cell whack-cell" id="w${i}" onclick="whClick(${i})"></div>`).join(''); logicInt = setInterval(()=>{ wTm--; document.getElementById('whack-score').innerText = `Score: ${wSc} | Time: ${wTm}`; if(wTm<=0) { submitScore('whack', wSc); return clearInterval(logicInt); } document.querySelectorAll('.whack-cell').forEach(c=>c.classList.remove('mole')); document.getElementById(`w${Math.floor(Math.random()*9)}`).classList.add('mole'); }, 1000); } function whClick(i) { let el = document.getElementById(`w${i}`); if(el.classList.contains('mole') && wTm>0) { wSc++; el.classList.remove('mole'); el.style.background='white'; setTimeout(()=>el.style.background='', 100); } }
+    let simSeq=[], simStep=0, simA=false; function init_simon() { simSeq=[]; simStep=0; simA=false; document.getElementById('simon-score').innerText='Watch...'; setTimeout(simNext, 1000); } function simNext() { simSeq.push(Math.floor(Math.random()*4)); simStep=0; document.getElementById('simon-score').innerText=`Level: ${simSeq.length}`; let i=0; let int = setInterval(()=>{ if(i>=simSeq.length) { clearInterval(int); simA=true; return; } let id=`simon-${simSeq[i]}`; document.getElementById(id).classList.add('active'); setTimeout(()=>document.getElementById(id).classList.remove('active'), 400); i++; }, 800); } function simonClick(i) { if(!simA) return; document.getElementById(`simon-${i}`).classList.add('active'); setTimeout(()=>document.getElementById(`simon-${i}`).classList.remove('active'), 200); if(simSeq[simStep]===i) { simStep++; if(simStep===simSeq.length) { simA=false; submitScore('simon', simSeq.length); setTimeout(simNext, 1000); } } else { document.getElementById('simon-score').innerText=`Game Over (Level ${simSeq.length}) - Restarting`; simA=false; setTimeout(init_simon, 2000); } }
+    let clkS=0, clkA=0; function init_clicker() { clkS=0; clkA=0; updateClk(); logicInt = setInterval(()=>{ clkS+=clkA; updateClk(); if(clkA>0) submitScore('clicker', clkS); }, 1000); } function clickerAdd() { clkS++; updateClk(); submitScore('clicker', clkS); } function clickerBuy() { if(clkS>=50) { clkS-=50; clkA++; updateClk(); } } function updateClk() { document.getElementById('clicker-score').innerText=`Cash: $${clkS}`; document.getElementById('clicker-auto').innerText=`Auto-Clickers: ${clkA}`; }
+    let rxSt=0, rxTm=0; function init_reaction() { rxSt=0; let b=document.getElementById('reaction-box'); b.style.background='#e50914'; b.innerText='Click to Start'; document.getElementById('reaction-score').innerText=''; } function reactionClick() { let b=document.getElementById('reaction-box'); if(rxSt===0) { rxSt=1; b.style.background='#e4b61a'; b.innerText='Wait for Green...'; setTimeout(()=>{ if(rxSt===1) {rxSt=2; b.style.background='#30a13d'; b.innerText='CLICK NOW!'; rxTm=Date.now();} }, Math.random()*2000+1000); } else if(rxSt===1) { rxSt=0; document.getElementById('reaction-score').innerText='Too early!'; init_reaction(); } else if(rxSt===2) { rxSt=0; let t = Date.now()-rxTm; document.getElementById('reaction-score').innerText=`Time: ${t}ms`; submitScore('reaction', t); b.style.background='#02bbee'; b.innerText='Click to Restart'; } }
+    let typWords = ['javascript','developer','function','variable','array','object','string','boolean','github','domain','server','client','browser','console','return','window','document','event','timeout','interval'], typSc=0, typTm=60; function init_typing() { typSc=0; typTm=60; document.getElementById('typing-input').value=''; setWord(); logicInt = setInterval(()=>{ typTm--; document.getElementById('typing-stats').innerText=`Score: ${typSc} | Time: ${typTm}`; if(typTm<=0) {clearInterval(logicInt); submitScore('typing', typSc); document.getElementById('typing-word').innerText='Game Over!'; document.getElementById('typing-input').disabled=true;} }, 1000); document.getElementById('typing-input').disabled=false; document.getElementById('typing-input').focus(); } function setWord() { document.getElementById('typing-word').innerText = typWords[Math.floor(Math.random()*typWords.length)]; } document.getElementById('typing-input').addEventListener('input', function(e) { if(e.target.value.trim() === document.getElementById('typing-word').innerText && typTm>0) { typSc++; e.target.value=''; setWord(); document.getElementById('typing-stats').innerText=`Score: ${typSc} | Time: ${typTm}`; } });
   </script>
 </body>
 </html>
