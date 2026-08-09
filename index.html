@@ -15,21 +15,49 @@
     @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
 
     /* Profile Screen */
-    #profile-screen { display: flex; flex-direction: column; align-items: center; justify-content: center; }
-    .profiles-title { font-size: 3.5vw; font-weight: 500; margin-bottom: 2em; }
-    .profile-list { display: flex; gap: 2vw; flex-wrap: wrap; justify-content: center; }
-    .profile { display: flex; flex-direction: column; align-items: center; cursor: pointer; transition: transform 0.2s; }
-    .profile-avatar { width: 10vw; height: 10vw; min-width: 80px; min-height: 80px; max-width: 150px; max-height: 150px; border-radius: 4px; border: 3px solid transparent; display: flex; align-items: center; justify-content: center; font-size: 3rem; color: white; transition: 0.2s; }
-    .profile-name { margin-top: 15px; font-size: 1.2vw; color: var(--muted); min-font-size: 14px; }
+    #profile-screen { display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 40px 20px; }
+    .profiles-title { font-size: 3.5vw; font-weight: 500; margin-bottom: 1.5em; min-font-size: 24px; text-align: center; }
+    .profile-list { display: flex; gap: 2vw; flex-wrap: wrap; justify-content: center; margin-bottom: 2.5em; }
+    .profile { display: flex; flex-direction: column; align-items: center; cursor: pointer; transition: transform 0.2s; position: relative; }
+    .profile-avatar { 
+      width: 10vw; height: 10vw; min-width: 90px; min-height: 90px; max-width: 150px; max-height: 150px; 
+      border-radius: 4px; border: 3px solid transparent; display: flex; align-items: center; justify-content: center; 
+      font-size: 3rem; color: white; transition: 0.2s; background-size: cover; background-position: center; 
+    }
+    .profile-name { margin-top: 15px; font-size: 1.2vw; color: var(--muted); min-font-size: 14px; text-align: center; }
     .profile:hover .profile-avatar { border-color: white; }
     .profile:hover .profile-name { color: white; }
     .add-btn { background: transparent; border: 2px solid var(--muted); color: var(--muted); font-size: 4rem; }
 
+    /* Manage Mode Overlay Icon */
+    .profile-edit-overlay {
+      position: absolute; top: 0; left: 0; width: 100%; height: 10vw; min-height: 90px; max-height: 150px;
+      background: rgba(0,0,0,0.6); display: flex; align-items: center; justify-content: center;
+      font-size: 2rem; border-radius: 4px; opacity: 0; transition: opacity 0.2s;
+    }
+    .managing .profile-edit-overlay { opacity: 1; }
+
+    /* Manage Button */
+    .manage-btn {
+      background: transparent; border: 1px solid var(--muted); color: var(--muted);
+      padding: 10px 24px; font-size: 1.1rem; letter-spacing: 2px; cursor: pointer; transition: 0.2s;
+    }
+    .manage-btn:hover { border-color: white; color: white; }
+
+    /* Modal Dialog (Profile Editor) */
+    .modal-wrap { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.85); display: flex; align-items: center; justify-content: center; z-index: 1000; }
+    .modal { background: #222; border-radius: 8px; padding: 30px; width: 90%; max-width: 420px; box-shadow: 0 10px 30px rgba(0,0,0,0.8); }
+    .modal h2 { margin-bottom: 20px; font-size: 1.5rem; }
+    .modal label { display: block; font-size: 0.85rem; color: var(--muted); margin: 15px 0 5px 0; }
+    .modal input { width: 100%; padding: 10px; background: #333; border: 1px solid #444; border-radius: 4px; color: white; font-size: 1rem; outline: none; }
+    .modal input:focus { border-color: var(--brand); }
+    .modal-actions { display: flex; justify-content: space-between; margin-top: 25px; gap: 10px; }
+    
     /* Hub Screen */
     .hub-header { padding: 20px 4%; display: flex; justify-content: space-between; background: linear-gradient(to bottom, #141414 0%, transparent 100%); position: sticky; top: 0; z-index: 100; }
     .hub-title { font-size: 2rem; font-weight: bold; color: var(--brand); letter-spacing: 2px; }
     .hub-user { display: flex; align-items: center; gap: 10px; cursor: pointer; }
-    .hub-user-avatar { width: 35px; height: 35px; border-radius: 4px; }
+    .hub-user-avatar { width: 35px; height: 35px; border-radius: 4px; background-size: cover; background-position: center; display: flex; align-items: center; justify-content: center; font-weight: bold; }
     
     .game-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 15px; padding: 20px 4% 50px 4%; }
     .game-card { background: #222; border-radius: 4px; cursor: pointer; aspect-ratio: 16/9; display: flex; flex-direction: column; align-items: center; justify-content: center; position: relative; transition: all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94); border: 1px solid rgba(255,255,255,0.05); }
@@ -44,6 +72,8 @@
     .game-toolbar { width: 100%; max-width: 600px; display: flex; justify-content: space-between; margin-bottom: 20px; }
     .back-btn, .action-btn { background: var(--brand); border: none; color: white; padding: 8px 16px; font-weight: bold; cursor: pointer; border-radius: 4px; }
     .back-btn:hover, .action-btn:hover { background: #f40612; }
+    .delete-btn { background: #333; border: 1px solid #555; color: #ff4d4d; padding: 8px 16px; font-weight: bold; cursor: pointer; border-radius: 4px; }
+    .delete-btn:hover { background: #ff4d4d; color: white; }
     
     .hidden { display: none !important; }
     .controls-hint { margin-top: 15px; color: var(--muted); text-align: center; font-size: 0.9rem; }
@@ -77,8 +107,32 @@
 
   <!-- PROFILE SCREEN -->
   <div id="profile-screen" class="screen active">
-    <h1 class="profiles-title">Who's playing?</h1>
+    <h1 class="profiles-title" id="profile-heading">Who's playing?</h1>
     <div class="profile-list" id="profile-list"></div>
+    <button class="manage-btn" id="manage-toggle-btn" onclick="toggleManageMode()">MANAGE PROFILES</button>
+  </div>
+
+  <!-- EDIT PROFILE MODAL -->
+  <div id="edit-modal" class="modal-wrap hidden">
+    <div class="modal">
+      <h2>Edit Profile</h2>
+      <label>Profile Name</label>
+      <input type="text" id="edit-name" placeholder="Name">
+      
+      <label>Background Color (Hex Code)</label>
+      <input type="text" id="edit-color" placeholder="#e50914">
+      
+      <label>Avatar Image URL (Optional)</label>
+      <input type="text" id="edit-img" placeholder="https://example.com/avatar.png">
+
+      <div class="modal-actions">
+        <button class="delete-btn" onclick="deleteCurrentProfile()">Delete</button>
+        <div>
+          <button class="action-btn" style="background:#555;" onclick="closeModal()">Cancel</button>
+          <button class="action-btn" onclick="saveProfileChanges()">Save</button>
+        </div>
+      </div>
+    </div>
   </div>
 
   <!-- HUB SCREEN -->
@@ -163,12 +217,15 @@
   </div>
 
   <script>
-    /* SYSTEM & INPUT */
-    const colors = ['#02bbee', '#e50914', '#e4b61a', '#30a13d', '#8c00ff'];
-    let profiles = JSON.parse(localStorage.getItem('ew_p')) || [{id:1, name:'Adam', color:'#00e817'}];
+    /* SYSTEM & PROFILE ENGINE */
+    const colors = ['#e50914', '#02bbee', '#e4b61a', '#30a13d', '#8c00ff'];
+    let profiles = JSON.parse(localStorage.getItem('ew_p_v2')) || [{id: 1, name: 'Adam', color: '#e50914', img: ''}];
     let activeProfile = null;
+    let editingProfileId = null;
+    let isManaging = false;
     let loopInt, logicInt;
     let keys = {};
+
     window.onkeydown = e => keys[e.key] = true;
     window.onkeyup = e => keys[e.key] = false;
     
@@ -177,19 +234,117 @@
     let ptr = {x:0, y:0, click:false};
     cvs.onmousedown = e => { let r=cvs.getBoundingClientRect(); ptr.x=e.clientX-r.left; ptr.y=e.clientY-r.top; ptr.click=true; };
 
-    function saveP() { localStorage.setItem('ew_p', JSON.stringify(profiles)); renderProfiles(); }
+    function saveP() { localStorage.setItem('ew_p_v2', JSON.stringify(profiles)); renderProfiles(); }
+    
     function renderProfiles() {
       const list = document.getElementById('profile-list');
-      list.innerHTML = profiles.map(p => `<div class="profile" onclick="login(${p.id})"><div class="profile-avatar" style="background:${p.color}">${p.name[0].toUpperCase()}</div><div class="profile-name">${p.name}</div></div>`).join('');
-      if(profiles.length < 5) list.innerHTML += `<div class="profile" onclick="addP()"><div class="profile-avatar add-btn">+</div><div class="profile-name">Add Profile</div></div>`;
+      const container = document.getElementById('profile-screen');
+      if (isManaging) container.classList.add('managing'); else container.classList.remove('managing');
+
+      list.innerHTML = profiles.map(p => {
+        const bgStyle = p.img ? `background-image: url('${p.img}');` : `background-color: ${p.color || '#e50914'};`;
+        const initial = p.img ? '' : p.name[0].toUpperCase();
+        return `
+          <div class="profile" onclick="handleProfileClick(${p.id})">
+            <div class="profile-avatar" style="${bgStyle}">${initial}</div>
+            <div class="profile-edit-overlay">✏️</div>
+            <div class="profile-name">${p.name}</div>
+          </div>
+        `;
+      }).join('');
+
+      if (profiles.length < 5 && !isManaging) {
+        list.innerHTML += `<div class="profile" onclick="addP()"><div class="profile-avatar add-btn">+</div><div class="profile-name">Add Profile</div></div>`;
+      }
     }
-    function addP() { let n = prompt("Name:"); if(n) { profiles.push({id:Date.now(), name:n.trim(), color:colors[profiles.length%5]}); saveP(); } }
+
+    function toggleManageMode() {
+      isManaging = !isManaging;
+      document.getElementById('profile-heading').innerText = isManaging ? 'Manage Profiles:' : "Who's playing?";
+      document.getElementById('manage-toggle-btn').innerText = isManaging ? 'DONE' : 'MANAGE PROFILES';
+      renderProfiles();
+    }
+
+    function handleProfileClick(id) {
+      if (isManaging) {
+        openEditModal(id);
+      } else {
+        login(id);
+      }
+    }
+
+    function addP() {
+      let n = prompt("Profile Name:");
+      if (n && n.trim()) {
+        profiles.push({
+          id: Date.now(),
+          name: n.trim(),
+          color: colors[profiles.length % colors.length],
+          img: ''
+        });
+        saveP();
+      }
+    }
+
+    function openEditModal(id) {
+      editingProfileId = id;
+      const p = profiles.find(item => item.id === id);
+      if (!p) return;
+      document.getElementById('edit-name').value = p.name;
+      document.getElementById('edit-color').value = p.color || '#e50914';
+      document.getElementById('edit-img').value = p.img || '';
+      document.getElementById('edit-modal').classList.remove('hidden');
+    }
+
+    function closeModal() {
+      document.getElementById('edit-modal').classList.add('hidden');
+      editingProfileId = null;
+    }
+
+    function saveProfileChanges() {
+      const p = profiles.find(item => item.id === editingProfileId);
+      if (p) {
+        const newName = document.getElementById('edit-name').value.trim();
+        const newColor = document.getElementById('edit-color').value.trim();
+        const newImg = document.getElementById('edit-img').value.trim();
+
+        if (newName) p.name = newName;
+        p.color = newColor.startsWith('#') ? newColor : `#${newColor}`;
+        p.img = newImg;
+
+        saveP();
+      }
+      closeModal();
+    }
+
+    function deleteCurrentProfile() {
+      if (profiles.length <= 1) {
+        alert("You must keep at least one profile!");
+        return;
+      }
+      profiles = profiles.filter(p => p.id !== editingProfileId);
+      saveP();
+      closeModal();
+    }
+
     function login(id) {
       activeProfile = profiles.find(p => p.id === id);
       document.getElementById('current-user-name').innerText = activeProfile.name;
-      document.getElementById('current-user-avatar').style.background = activeProfile.color;
+      const avatarEl = document.getElementById('current-user-avatar');
+      
+      if (activeProfile.img) {
+        avatarEl.style.backgroundImage = `url('${activeProfile.img}')`;
+        avatarEl.style.backgroundColor = 'transparent';
+        avatarEl.innerText = '';
+      } else {
+        avatarEl.style.backgroundImage = 'none';
+        avatarEl.style.backgroundColor = activeProfile.color || '#e50914';
+        avatarEl.innerText = activeProfile.name[0].toUpperCase();
+      }
+
       switchScreen('hub-screen');
     }
+
     function switchScreen(id) { document.querySelectorAll('.screen').forEach(s => s.classList.remove('active')); document.getElementById(id).classList.add('active'); }
 
     /* HUB SETUP */
@@ -359,7 +514,6 @@
         ctx.fillStyle='white'; ctx.font='20px Arial'; ctx.fillText('Score: '+s+' | Time: '+tm, 10, 30);
       } loop();
     }
-
 
     /* =========================================
        DOM GAMES (9-15)
