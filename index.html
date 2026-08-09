@@ -8,7 +8,6 @@
   <!-- Firebase Global Compat Libraries -->
   <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
-  <!-- Storage script removed! -->
 
   <style>
     :root { --bg: #141414; --text: #fff; --muted: #808080; --brand: #e50914; }
@@ -43,7 +42,7 @@
     .modal h2 { margin-bottom: 20px; font-size: 1.5rem; color: white; }
     .modal label { display: block; font-size: 0.85rem; color: var(--muted); margin: 15px 0 5px 0; }
     .modal input[type="text"] { width: 100%; padding: 10px; background: #333; border: 1px solid #444; border-radius: 4px; color: white; font-size: 1rem; outline: none; }
-    .modal input[type="file"] { width: 100%; padding: 10px; background: #333; border: 1px dashed #555; border-radius: 4px; color: white; cursor: pointer; }
+    .modal input[type="file"] { width: 100%; padding: 10px; background: #333; border: 1px dashed #555; border-radius: 4px; color: white; cursor: pointer; margin-bottom: 15px; }
     .modal input[type="text"]:focus { border-color: var(--brand); }
     .modal-actions { display: flex; justify-content: space-between; margin-top: 25px; gap: 10px; }
     
@@ -206,7 +205,7 @@
         <div id="cvs-hint" class="controls-hint"></div>
       </div>
 
-      <!-- Tic-Tac-Toe -->
+      <!-- Games DOM -->
       <div id="game-ttt" class="game-container hidden"><div class="grid-3x3" id="ttt-board"></div><div id="ttt-status" class="controls-hint" style="font-size: 1.2rem; color: white;">Your turn! (X)</div></div>
       <div id="game-memory" class="game-container hidden"><div class="grid-4x4" id="mem-board"></div><div id="mem-status" class="controls-hint">Matches: 0/8</div></div>
       <div id="game-whack" class="game-container hidden"><div class="stats" id="whack-score">Score: 0 | Time: 30</div><div class="grid-3x3" id="whack-board"></div></div>
@@ -307,9 +306,14 @@
         const p = profiles.find(item => item.id === id);
         if (p.name.toLowerCase() === 'adam') {
           const pin = prompt("Enter PIN:");
-          if (pin !== "8888") { alert("Incorrect PIN! Access Denied."); return; }
+          // Validates against null (cancel) or wrong PIN safely
+          if (pin === null || pin.trim() !== "8888") { 
+            alert("Incorrect PIN! Access Denied."); 
+            return; 
+          }
         }
-        login(id);
+        // Safely launch hub
+        enterArcadeHub(id);
       }
     }
 
@@ -345,7 +349,7 @@
       if (!p) return;
 
       const btn = document.getElementById('save-prof-btn');
-      btn.innerText = "Compressing & Saving...";
+      btn.innerText = "Saving (Freezing image)...";
       btn.disabled = true;
 
       const newName = document.getElementById('edit-name').value.trim();
@@ -356,7 +360,7 @@
       try {
         let finalImg = newImgUrl || p.img;
 
-        // Custom Canvas Image Compressor (Bypasses Firebase Storage entirely!)
+        // Custom Canvas Image Compressor (Free Base64 storage)
         if (fileInput) {
           finalImg = await new Promise((resolve) => {
             const reader = new FileReader();
@@ -364,19 +368,21 @@
               const img = new Image();
               img.onload = () => {
                 const canvas = document.createElement('canvas');
-                const MAX_SIZE = 150; // Compresses PFP to 150x150
+                const MAX_SIZE = 150; 
                 canvas.width = MAX_SIZE;
                 canvas.height = MAX_SIZE;
                 const ctx = canvas.getContext('2d');
                 
-                // Crop cover to fit square
+                ctx.fillStyle = "#333";
+                ctx.fillRect(0, 0, MAX_SIZE, MAX_SIZE);
                 const scale = Math.max(MAX_SIZE / img.width, MAX_SIZE / img.height);
-                const x = (MAX_SIZE / 2) - (img.width / 2) * scale;
-                const y = (MAX_SIZE / 2) - (img.height / 2) * scale;
-                ctx.drawImage(img, x, y, img.width * scale, img.height * scale);
+                const w = img.width * scale;
+                const h = img.height * scale;
+                const x = (MAX_SIZE / 2) - (w / 2);
+                const y = (MAX_SIZE / 2) - (h / 2);
                 
-                // Convert down to a tiny Base64 text string to save in Firestore
-                resolve(canvas.toDataURL('image/jpeg', 0.8));
+                ctx.drawImage(img, x, y, w, h);
+                resolve(canvas.toDataURL('image/jpeg', 0.85));
               };
               img.src = e.target.result;
             };
@@ -400,8 +406,11 @@
       closeModal('edit-modal');
     }
 
-    function login(id) {
+    // RENAMED from login() to avoid browser autofill script collisions
+    function enterArcadeHub(id) {
       activeProfile = profiles.find(p => p.id === id);
+      if (!activeProfile) return;
+
       document.getElementById('current-user-name').innerText = activeProfile.name;
       
       if (activeProfile.name.toLowerCase() === 'adam') {
@@ -411,14 +420,14 @@
       }
 
       const avatarEl = document.getElementById('current-user-avatar');
-      if (activeProfile.img) {
+      if (activeProfile.img && activeProfile.img.length > 5) {
         avatarEl.style.backgroundImage = `url('${activeProfile.img}')`;
         avatarEl.style.backgroundColor = 'transparent';
         avatarEl.innerText = '';
       } else {
         avatarEl.style.backgroundImage = 'none';
         avatarEl.style.backgroundColor = activeProfile.color || '#e50914';
-        avatarEl.innerText = activeProfile.name[0].toUpperCase();
+        avatarEl.innerText = (activeProfile.name[0] || '?').toUpperCase();
       }
       switchScreen('hub-screen');
     }
@@ -431,7 +440,7 @@
     function openAdminPanel() {
       if (activeProfile.name.toLowerCase() !== 'adam') return;
       const pin = prompt("Confirm Admin PIN:");
-      if (pin !== "8888") { alert("Access Denied!"); return; }
+      if (pin === null || pin.trim() !== "8888") { alert("Access Denied!"); return; }
       document.getElementById('admin-modal').classList.remove('hidden');
       renderAdminProfiles();
     }
@@ -471,8 +480,8 @@
       
       if(snap.exists) {
         let oldScore = snap.data().score;
-        if(gameId === 'reaction') { if(score < oldScore) isNewHigh = true; } // Lower is better
-        else { if(score > oldScore) isNewHigh = true; } // Higher is better
+        if(gameId === 'reaction') { if(score < oldScore) isNewHigh = true; } 
+        else { if(score > oldScore) isNewHigh = true; }
       } else {
         isNewHigh = true;
       }
@@ -537,6 +546,7 @@
     function init_space() { cvs.width=400; cvs.height=500; document.getElementById('cvs-hint').innerHTML = "Left/Right + Space to Shoot"; let px=180, b=[], en=[], f=0, sc=0, over=false; function loop() { loopInt = requestAnimationFrame(loop); ctx.clearRect(0,0,400,500); if((keys['ArrowLeft']||keys['a']) && px>0) px-=5; if((keys['ArrowRight']||keys['d']) && px<360) px+=5; if(keys[' '] && f%10===0 && !over) b.push({x:px+18, y:450}); f++; if(f%40===0 && !over) en.push({x:Math.random()*360, y:-30}); if(over && ptr.click) { px=180; b=[]; en=[]; sc=0; over=false; ptr.click=false; } ctx.fillStyle='yellow'; b.forEach((bu,i)=>{ bu.y-=8; ctx.fillRect(bu.x,bu.y,4,10); if(bu.y<0) b.splice(i,1); }); ctx.fillStyle='red'; en.forEach((e,i)=>{ e.y+=3; ctx.fillRect(e.x,e.y,30,30); if(e.y>500) { if(!over) submitScore('space', sc); over=true; } }); b.forEach((bu,bi)=>{ en.forEach((e,ei)=>{ if(bu.x>e.x && bu.x<e.x+30 && bu.y>e.y && bu.y<e.y+30) { b.splice(bi,1); en.splice(ei,1); sc+=10; }})}); ctx.fillStyle='#02bbee'; ctx.beginPath(); ctx.moveTo(px+20,440); ctx.lineTo(px,480); ctx.lineTo(px+40,480); ctx.fill(); ctx.fillStyle='white'; ctx.font='20px Arial'; ctx.fillText('Score: '+sc, 10, 30); if(over) { ctx.fillStyle='red'; ctx.fillText('GAME OVER - Click to Restart', 60, 250); } } loop(); }
     function init_catch() { cvs.width=600; cvs.height=400; document.getElementById('cvs-hint').innerHTML = "Left/Right to catch apples"; let px=250, a=[], f=0, sc=0, over=false; function loop() { loopInt = requestAnimationFrame(loop); ctx.clearRect(0,0,600,400); if((keys['ArrowLeft']||keys['a']) && px>0) px-=7; if((keys['ArrowRight']||keys['d']) && px<500) px+=7; if(over && ptr.click) { px=250; a=[]; sc=0; over=false; ptr.click=false; } if(!over) { f++; if(f%30===0) a.push({x:Math.random()*560, y:-20}); } ctx.fillStyle='red'; a.forEach((ap,i)=>{ ap.y+=4; ctx.beginPath(); ctx.arc(ap.x,ap.y,12,0,Math.PI*2); ctx.fill(); if(ap.y>370 && ap.y<400 && ap.x>px && ap.x<px+100) { sc++; a.splice(i,1); } else if(ap.y>400) { if(!over) submitScore('catch', sc); over=true; } }); ctx.fillStyle='#8b4513'; ctx.fillRect(px, 370, 100, 30); ctx.fillStyle='white'; ctx.font='20px Arial'; ctx.fillText('Score: '+sc, 10, 30); if(over) { ctx.fillStyle='red'; ctx.fillText('GAME OVER - Click to Restart', 150, 200); } } loop(); }
     function init_reflex() { cvs.width=600; cvs.height=400; document.getElementById('cvs-hint').innerHTML = "Click targets fast!"; let t={x:300, y:200, r:30}, sc=0, tm=30, f=0; function loop() { loopInt = requestAnimationFrame(loop); ctx.clearRect(0,0,600,400); if(ptr.click) { ptr.click=false; if(tm<=0) {tm=30;sc=0;} else if(Math.hypot(ptr.x-t.x, ptr.y-t.y)<t.r) { sc++; t.x=Math.random()*500+50; t.y=Math.random()*300+50; t.r=Math.max(10,30-sc); } } if(tm>0) { f++; if(f%60===0) tm--; ctx.fillStyle='#30a13d'; ctx.beginPath(); ctx.arc(t.x,t.y,t.r,0,Math.PI*2); ctx.fill(); } else { ctx.fillStyle='red'; ctx.font='30px Arial'; ctx.fillText('Time Up! Click to Restart', 130, 200); if(tm===0 && f%60===1) submitScore('reflex', sc); } ctx.fillStyle='white'; ctx.font='20px Arial'; ctx.fillText('Score: '+sc+' | Time: '+tm, 10, 30); } loop(); }
+
     let ttt=['','','','','','','','',''], tttA=true; function init_ttt() { ttt=['','','','','','','','','']; tttA=true; document.getElementById('ttt-status').innerText='Your turn! (X)'; document.getElementById('ttt-board').innerHTML = ttt.map((_,i)=>`<div class="cell" id="c${i}" onclick="tttClick(${i})"></div>`).join(''); } function tttClick(i) { if(ttt[i]!==''||!tttA) return; ttt[i]='X'; document.getElementById(`c${i}`).innerText='X'; if(tttWin('X')) return document.getElementById('ttt-status').innerText='🎉 You Won!'; if(!ttt.includes('')) return document.getElementById('ttt-status').innerText='🤝 Draw!'; tttA=false; document.getElementById('ttt-status').innerText='Thinking...'; setTimeout(()=>{ let e=ttt.map((v,i)=>v===''?i:null).filter(v=>v!==null), m=e[Math.floor(Math.random()*e.length)]; ttt[m]='O'; document.getElementById(`c${m}`).innerText='O'; document.getElementById(`c${m}`).style.color='red'; if(tttWin('O')) document.getElementById('ttt-status').innerText='💀 Computer Won!'; else if(!ttt.includes('')) document.getElementById('ttt-status').innerText='🤝 Draw!'; else { document.getElementById('ttt-status').innerText='Your turn! (X)'; tttA=true; } }, 400); } function tttWin(p) { return [[0,1,2],[3,4,5],[6,7,8],[0,3,6],[1,4,7],[2,5,8],[0,4,8],[2,4,6]].some(w=>w.every(i=>ttt[i]===p)); }
     let memArr=[], memF=[], memM=0; function init_memory() { let em = ['🍎','🍌','🍇','🍉','🍓','🍒','🍑','🥭']; memArr = [...em, ...em].sort(()=>Math.random()-0.5); memF=[]; memM=0; document.getElementById('mem-status').innerText = 'Matches: 0/8'; document.getElementById('mem-board').innerHTML = memArr.map((_,i)=>`<div class="cell mem-cell" id="m${i}" onclick="memClick(${i})">?</div>`).join(''); } function memClick(i) { if(memF.length===2 || memF.includes(i) || document.getElementById(`m${i}`).innerText!=='?') return; document.getElementById(`m${i}`).innerText = memArr[i]; memF.push(i); if(memF.length===2) { if(memArr[memF[0]]===memArr[memF[1]]) { memM++; document.getElementById('mem-status').innerText=`Matches: ${memM}/8`; memF=[]; if(memM===8) document.getElementById('mem-status').innerText='🎉 You Won!'; } else setTimeout(()=>{ document.getElementById(`m${memF[0]}`).innerText='?'; document.getElementById(`m${memF[1]}`).innerText='?'; memF=[]; }, 600); } }
     let wSc=0, wTm=30; function init_whack() { wSc=0; wTm=30; document.getElementById('whack-board').innerHTML = Array(9).fill().map((_,i)=>`<div class="cell whack-cell" id="w${i}" onclick="whClick(${i})"></div>`).join(''); logicInt = setInterval(()=>{ wTm--; document.getElementById('whack-score').innerText = `Score: ${wSc} | Time: ${wTm}`; if(wTm<=0) { submitScore('whack', wSc); return clearInterval(logicInt); } document.querySelectorAll('.whack-cell').forEach(c=>c.classList.remove('mole')); document.getElementById(`w${Math.floor(Math.random()*9)}`).classList.add('mole'); }, 1000); } function whClick(i) { let el = document.getElementById(`w${i}`); if(el.classList.contains('mole') && wTm>0) { wSc++; el.classList.remove('mole'); el.style.background='white'; setTimeout(()=>el.style.background='', 100); } }
