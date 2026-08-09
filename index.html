@@ -4,6 +4,11 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Evil Wizard Arcade</title>
+  
+  <!-- Firebase Compat Libraries (Fixes the clicking issue) -->
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+
   <style>
     :root { --bg: #141414; --text: #fff; --muted: #808080; --brand: #e50914; }
     * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; user-select: none; }
@@ -16,11 +21,11 @@
 
     /* Profile Screen */
     #profile-screen { display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 40px 20px; }
-    .profiles-title { font-size: 3.5vw; font-weight: 500; margin-bottom: 1.5em; min-font-size: 24px; text-align: center; }
+    .profiles-title { font-size: 3.5vw; font-weight: 500; margin-bottom: 1.5em; text-align: center; }
     .profile-list { display: flex; gap: 2vw; flex-wrap: wrap; justify-content: center; margin-bottom: 2.5em; }
     .profile { display: flex; flex-direction: column; align-items: center; cursor: pointer; transition: transform 0.2s; position: relative; }
     .profile-avatar { width: 10vw; height: 10vw; min-width: 90px; min-height: 90px; max-width: 150px; max-height: 150px; border-radius: 4px; border: 3px solid transparent; display: flex; align-items: center; justify-content: center; font-size: 3rem; color: white; transition: 0.2s; background-size: cover; background-position: center; }
-    .profile-name { margin-top: 15px; font-size: 1.2vw; color: var(--muted); min-font-size: 14px; text-align: center; }
+    .profile-name { margin-top: 15px; font-size: 1.2vw; color: var(--muted); text-align: center; }
     .profile:hover .profile-avatar { border-color: white; }
     .profile:hover .profile-name { color: white; }
     .add-btn { background: transparent; border: 2px solid var(--muted); color: var(--muted); font-size: 4rem; }
@@ -28,8 +33,6 @@
     /* Manage Mode Overlay Icon */
     .profile-edit-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 10vw; min-height: 90px; max-height: 150px; background: rgba(0,0,0,0.6); display: flex; align-items: center; justify-content: center; font-size: 2rem; border-radius: 4px; opacity: 0; transition: opacity 0.2s; }
     .managing .profile-edit-overlay { opacity: 1; }
-
-    /* Manage Button */
     .manage-btn { background: transparent; border: 1px solid var(--muted); color: var(--muted); padding: 10px 24px; font-size: 1.1rem; letter-spacing: 2px; cursor: pointer; transition: 0.2s; }
     .manage-btn:hover { border-color: white; color: white; }
 
@@ -91,6 +94,15 @@
     .reaction-box { width: 400px; height: 300px; background: #e50914; display: flex; align-items: center; justify-content: center; font-size: 2rem; font-weight: bold; cursor: pointer; border-radius: 8px; }
     .typing-word { font-size: 3rem; margin-bottom: 20px; letter-spacing: 2px; }
     .typing-input { padding: 10px; font-size: 1.5rem; width: 300px; text-align: center; border-radius: 4px; border: none; outline: none; }
+
+    /* MOBILE SPECIFIC OVERRIDES (Fixes Goal 1) */
+    @media (max-width: 768px) {
+      .profile-name { font-size: 16px; margin-top: 10px; }
+      .profile-avatar { width: 100px; height: 100px; font-size: 3.5rem; }
+      .profiles-title { font-size: 2rem; margin-bottom: 30px; }
+      .profile-list { gap: 20px; }
+      .manage-btn { font-size: 1rem; padding: 10px 20px; }
+    }
   </style>
 </head>
 <body>
@@ -183,13 +195,10 @@
     </div>
   </div>
 
-  <script type="module">
+  <script>
     // ==========================================
-    // FIREBASE CLOUD SETUP
+    // FIREBASE CLOUD SETUP (COMPAT SCRIPT)
     // ==========================================
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-    import { getFirestore, collection, doc, getDocs, getDoc, setDoc, deleteDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
-
     const firebaseConfig = {
       apiKey: "AIzaSyBVEFPRRfC9km-OlD7bFlJ576rn04DKGLg",
       authDomain: "wizard-co-537bf.firebaseapp.com",
@@ -199,18 +208,18 @@
       appId: "1:36260203502:web:fd0cf34bfd13dea3ab1cff"
     };
 
-    const app = initializeApp(firebaseConfig);
-    const db = getFirestore(app);
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.firestore();
 
     // ==========================================
     // SYSTEM & CLOUD PROFILE ENGINE
     // ==========================================
     const colors = ['#e50914', '#02bbee', '#e4b61a', '#30a13d', '#8c00ff'];
-    window.profiles = [];
-    window.activeProfile = null;
-    window.editingProfileId = null;
-    window.isManaging = false;
-    window.activeGameId = null;
+    let profiles = [];
+    let activeProfile = null;
+    let editingProfileId = null;
+    let isManaging = false;
+    let activeGameId = null;
     let loopInt, logicInt;
     let keys = {};
 
@@ -222,120 +231,121 @@
     cvs.onmousedown = e => { let r=cvs.getBoundingClientRect(); ptr.x=e.clientX-r.left; ptr.y=e.clientY-r.top; ptr.click=true; };
 
     // Fetch Profiles Live
-    onSnapshot(collection(db, "profiles"), async (snapshot) => {
+    db.collection("profiles").onSnapshot((snapshot) => {
       if(snapshot.empty) {
-        // Create default profile if DB is completely empty
-        const defRef = doc(collection(db, "profiles"));
-        await setDoc(defRef, { name: 'Adam', color: '#e50914', img: '' });
+        db.collection("profiles").add({ name: 'Adam', color: '#e50914', img: '' });
       } else {
-        window.profiles = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
-        document.getElementById('profile-heading').innerText = window.isManaging ? 'Manage Profiles:' : "Who's playing?";
+        profiles = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
+        document.getElementById('profile-heading').innerText = isManaging ? 'Manage Profiles:' : "Who's playing?";
         document.getElementById('manage-toggle-btn').classList.remove('hidden');
-        window.renderProfiles();
+        renderProfiles();
       }
     });
 
-    window.renderProfiles = () => {
+    function renderProfiles() {
       const list = document.getElementById('profile-list');
       const container = document.getElementById('profile-screen');
-      if (window.isManaging) container.classList.add('managing'); else container.classList.remove('managing');
+      if (isManaging) container.classList.add('managing'); else container.classList.remove('managing');
 
-      list.innerHTML = window.profiles.map(p => {
+      list.innerHTML = profiles.map(p => {
         const bgStyle = p.img ? `background-image: url('${p.img}');` : `background-color: ${p.color || '#e50914'};`;
         const initial = p.img ? '' : p.name[0].toUpperCase();
-        return `<div class="profile" onclick="window.handleProfileClick('${p.id}')">
+        return `<div class="profile" onclick="handleProfileClick('${p.id}')">
             <div class="profile-avatar" style="${bgStyle}">${initial}</div>
             <div class="profile-edit-overlay">✏️</div>
             <div class="profile-name">${p.name}</div>
           </div>`;
       }).join('');
 
-      if (window.profiles.length < 5 && !window.isManaging) {
-        list.innerHTML += `<div class="profile" onclick="window.addP()"><div class="profile-avatar add-btn">+</div><div class="profile-name">Add Profile</div></div>`;
+      if (profiles.length < 5 && !isManaging) {
+        list.innerHTML += `<div class="profile" onclick="addP()"><div class="profile-avatar add-btn">+</div><div class="profile-name">Add Profile</div></div>`;
       }
-    };
+    }
 
-    window.toggleManageMode = () => {
-      window.isManaging = !window.isManaging;
-      document.getElementById('profile-heading').innerText = window.isManaging ? 'Manage Profiles:' : "Who's playing?";
-      document.getElementById('manage-toggle-btn').innerText = window.isManaging ? 'DONE' : 'MANAGE PROFILES';
-      window.renderProfiles();
-    };
+    function toggleManageMode() {
+      isManaging = !isManaging;
+      document.getElementById('profile-heading').innerText = isManaging ? 'Manage Profiles:' : "Who's playing?";
+      document.getElementById('manage-toggle-btn').innerText = isManaging ? 'DONE' : 'MANAGE PROFILES';
+      renderProfiles();
+    }
 
-    window.handleProfileClick = (id) => {
-      if (window.isManaging) window.openEditModal(id);
-      else window.login(id);
-    };
+    function handleProfileClick(id) {
+      if (isManaging) openEditModal(id);
+      else login(id);
+    }
 
-    window.addP = async () => {
+    async function addP() {
       let n = prompt("Profile Name:");
       if (n && n.trim()) {
-        const ref = doc(collection(db, "profiles"));
-        await setDoc(ref, { name: n.trim(), color: colors[window.profiles.length % colors.length], img: '' });
+        await db.collection("profiles").add({ 
+          name: n.trim(), 
+          color: colors[profiles.length % colors.length], 
+          img: '' 
+        });
       }
-    };
+    }
 
-    window.openEditModal = (id) => {
-      window.editingProfileId = id;
-      const p = window.profiles.find(item => item.id === id);
+    function openEditModal(id) {
+      editingProfileId = id;
+      const p = profiles.find(item => item.id === id);
       if (!p) return;
       document.getElementById('edit-name').value = p.name;
       document.getElementById('edit-color').value = p.color || '#e50914';
       document.getElementById('edit-img').value = p.img || '';
       document.getElementById('edit-modal').classList.remove('hidden');
-    };
+    }
 
-    window.closeModal = () => { document.getElementById('edit-modal').classList.add('hidden'); window.editingProfileId = null; };
+    function closeModal() { document.getElementById('edit-modal').classList.add('hidden'); editingProfileId = null; }
 
-    window.saveProfileChanges = async () => {
-      const p = window.profiles.find(item => item.id === window.editingProfileId);
+    async function saveProfileChanges() {
+      const p = profiles.find(item => item.id === editingProfileId);
       if (p) {
         const newName = document.getElementById('edit-name').value.trim();
         const newColor = document.getElementById('edit-color').value.trim();
         const newImg = document.getElementById('edit-img').value.trim();
-        await setDoc(doc(db, "profiles", window.editingProfileId), { 
+        await db.collection("profiles").doc(editingProfileId).set({ 
           name: newName || p.name, 
           color: newColor.startsWith('#') ? newColor : `#${newColor}`, 
           img: newImg 
         }, { merge: true });
       }
-      window.closeModal();
-    };
+      closeModal();
+    }
 
-    window.deleteCurrentProfile = async () => {
-      if (window.profiles.length <= 1) { alert("You must keep at least one profile!"); return; }
-      await deleteDoc(doc(db, "profiles", window.editingProfileId));
-      window.closeModal();
-    };
+    async function deleteCurrentProfile() {
+      if (profiles.length <= 1) { alert("You must keep at least one profile!"); return; }
+      await db.collection("profiles").doc(editingProfileId).delete();
+      closeModal();
+    }
 
-    window.login = (id) => {
-      window.activeProfile = window.profiles.find(p => p.id === id);
-      document.getElementById('current-user-name').innerText = window.activeProfile.name;
+    function login(id) {
+      activeProfile = profiles.find(p => p.id === id);
+      document.getElementById('current-user-name').innerText = activeProfile.name;
       const avatarEl = document.getElementById('current-user-avatar');
-      if (window.activeProfile.img) {
-        avatarEl.style.backgroundImage = `url('${window.activeProfile.img}')`;
+      if (activeProfile.img) {
+        avatarEl.style.backgroundImage = `url('${activeProfile.img}')`;
         avatarEl.style.backgroundColor = 'transparent';
         avatarEl.innerText = '';
       } else {
         avatarEl.style.backgroundImage = 'none';
-        avatarEl.style.backgroundColor = window.activeProfile.color || '#e50914';
-        avatarEl.innerText = window.activeProfile.name[0].toUpperCase();
+        avatarEl.style.backgroundColor = activeProfile.color || '#e50914';
+        avatarEl.innerText = activeProfile.name[0].toUpperCase();
       }
-      window.switchScreen('hub-screen');
-    };
+      switchScreen('hub-screen');
+    }
 
-    window.switchScreen = (id) => { document.querySelectorAll('.screen').forEach(s => s.classList.remove('active')); document.getElementById(id).classList.add('active'); };
+    function switchScreen(id) { document.querySelectorAll('.screen').forEach(s => s.classList.remove('active')); document.getElementById(id).classList.add('active'); }
 
     // ==========================================
     // CLOUD LEADERBOARD ENGINE
     // ==========================================
-    window.submitScore = async (gameId, score) => {
-      if(!window.activeProfile) return;
-      const docRef = doc(db, "scores", `${window.activeProfile.id}_${gameId}`);
-      const snap = await getDoc(docRef);
+    async function submitScore(gameId, score) {
+      if(!activeProfile) return;
+      const docRef = db.collection("scores").doc(`${activeProfile.id}_${gameId}`);
+      const snap = await docRef.get();
       let isNewHigh = false;
       
-      if(snap.exists()) {
+      if(snap.exists) {
         let oldScore = snap.data().score;
         if(gameId === 'reaction') { if(score < oldScore) isNewHigh = true; } // Lower is better
         else { if(score > oldScore) isNewHigh = true; } // Higher is better
@@ -344,20 +354,19 @@
       }
 
       if(isNewHigh) {
-        await setDoc(docRef, { profileId: window.activeProfile.id, name: window.activeProfile.name, gameId: gameId, score: score, timestamp: Date.now() });
-        console.log(`Cloud saved new high score for ${gameId}: ${score}`);
+        await docRef.set({ profileId: activeProfile.id, name: activeProfile.name, gameId: gameId, score: score, timestamp: Date.now() });
       }
-    };
+    }
 
-    window.showLeaderboard = async () => {
+    async function showLeaderboard() {
       document.getElementById('lb-modal').classList.remove('hidden');
       const content = document.getElementById('lb-content');
       content.innerHTML = 'Fetching from cloud...';
       
-      const snap = await getDocs(collection(db, "scores"));
-      let scores = snap.docs.map(d=>d.data()).filter(d => d.gameId === window.activeGameId);
+      const snap = await db.collection("scores").where("gameId", "==", activeGameId).get();
+      let scores = snap.docs.map(d=>d.data());
       
-      if(window.activeGameId === 'reaction') scores.sort((a,b)=> a.score - b.score);
+      if(activeGameId === 'reaction') scores.sort((a,b)=> a.score - b.score);
       else scores.sort((a,b)=> b.score - a.score);
       
       scores = scores.slice(0, 10);
@@ -366,13 +375,13 @@
         content.innerHTML = scores.map((s,i) => `
           <div class="lb-row">
             <span>${i+1}. ${s.name}</span>
-            <span>${s.score}${window.activeGameId==='reaction'?'ms':''}</span>
+            <span>${s.score}${activeGameId==='reaction'?'ms':''}</span>
           </div>
         `).join('');
       }
-    };
+    }
     
-    window.closeLb = () => { document.getElementById('lb-modal').classList.add('hidden'); };
+    function closeLb() { document.getElementById('lb-modal').classList.add('hidden'); }
 
     // ==========================================
     // GAMES HUB
@@ -388,24 +397,24 @@
       { id: 'typing', t: 'Typing', e: '⌨️', bg: '#1e333a', type: 'dom' }
     ];
 
-    document.getElementById('playable-grid').innerHTML = games.map(g => `<div class="game-card" style="background:${g.bg}" onclick="window.launch('${g.id}', '${g.t}', '${g.type}')"><div class="game-bg"></div><div class="game-emoji">${g.e}</div><div class="game-title">${g.t}</div></div>`).join('');
+    document.getElementById('playable-grid').innerHTML = games.map(g => `<div class="game-card" style="background:${g.bg}" onclick="launch('${g.id}', '${g.t}', '${g.type}')"><div class="game-bg"></div><div class="game-emoji">${g.e}</div><div class="game-title">${g.t}</div></div>`).join('');
 
-    window.launch = (id, title, type) => {
+    function launch(id, title, type) {
       cancelAnimationFrame(loopInt); clearInterval(logicInt);
-      window.activeGameId = id;
+      activeGameId = id;
       document.getElementById('active-game-title').innerText = title;
       document.querySelectorAll('.game-container').forEach(c => c.classList.add('hidden'));
       if(type === 'cvs') document.getElementById('game-canvas-wrap').classList.remove('hidden');
       else document.getElementById(`game-${id}`).classList.remove('hidden');
-      window.switchScreen('game-screen');
+      switchScreen('game-screen');
       ptr.click = false; keys = {}; window['init_' + id]();
-    };
-    window.exitGame = () => { cancelAnimationFrame(loopInt); clearInterval(logicInt); window.switchScreen('hub-screen'); };
+    }
+    function exitGame() { cancelAnimationFrame(loopInt); clearInterval(logicInt); switchScreen('hub-screen'); }
 
     // ==========================================
     // CANVAS GAMES (1-8)
     // ==========================================
-    window.init_snake = () => {
+    function init_snake() {
       cvs.width=400; cvs.height=400; document.getElementById('cvs-hint').innerHTML = "Arrow Keys / WASD";
       let s={x:160, y:160, dx:20, dy:0, c:[], m:4}, app={x:320, y:320}, cnt=0, over=false;
       function loop() {
@@ -416,12 +425,12 @@
         ctx.fillStyle='red'; ctx.fillRect(app.x, app.y, 19, 19); ctx.fillStyle='lime';
         s.c.forEach((c,i)=>{ ctx.fillRect(c.x,c.y,19,19);
           if(c.x===app.x && c.y===app.y) {s.m++; app.x=Math.floor(Math.random()*20)*20; app.y=Math.floor(Math.random()*20)*20;}
-          for(let j=i+1; j<s.c.length; j++) if(c.x===s.c[j].x && c.y===s.c[j].y) { if(!over){ window.submitScore('snake', s.m-4); over=true; } s={x:160,y:160,dx:20,dy:0,c:[],m:4}; over=false; }
+          for(let j=i+1; j<s.c.length; j++) if(c.x===s.c[j].x && c.y===s.c[j].y) { if(!over){ submitScore('snake', s.m-4); over=true; } s={x:160,y:160,dx:20,dy:0,c:[],m:4}; over=false; }
         });
       } loop();
-    };
+    }
 
-    window.init_pong = () => {
+    function init_pong() {
       cvs.width=600; cvs.height=400; document.getElementById('cvs-hint').innerHTML = "W / S or Up / Down";
       let pY=150, aiY=150, bX=300, bY=200, dx=5, dy=3;
       function loop() {
@@ -433,9 +442,9 @@
         if(bX<0 || bX>600) {bX=300; bY=200; dx=-dx;}
         ctx.fillStyle='white'; ctx.fillRect(10,pY,10,80); ctx.fillRect(580,aiY,10,80); ctx.fillRect(bX-5,bY-5,10,10);
       } loop();
-    };
+    }
 
-    window.init_flappy = () => {
+    function init_flappy() {
       cvs.width=400; cvs.height=500; document.getElementById('cvs-hint').innerHTML = "Space or Click to jump";
       let y=250, v=0, p=[], f=0, sc=0, over=false;
       function loop() {
@@ -445,14 +454,14 @@
         if(!over) { v+=0.3; y+=v; f++; if(f%90===0) {let h=Math.floor(Math.random()*200)+50; p.push({x:400, t:h, b:h+120});} p.forEach(i=>i.x-=3); p=p.filter(i=>i.x>-50); }
         ctx.fillStyle='yellow'; ctx.fillRect(50,y,30,30); ctx.fillStyle='green';
         p.forEach(i=>{ ctx.fillRect(i.x,0,40,i.t); ctx.fillRect(i.x,i.b,40,500-i.b);
-          if((50<i.x+40 && 80>i.x && (y<i.t || y+30>i.b)) || y>500) { if(!over) window.submitScore('flappy', sc); over=true; }
+          if((50<i.x+40 && 80>i.x && (y<i.t || y+30>i.b)) || y>500) { if(!over) submitScore('flappy', sc); over=true; }
           if(i.x===47) sc++; });
         ctx.fillStyle='white'; ctx.font='20px Arial'; ctx.fillText('Score: '+sc, 10, 30);
         if(over) { ctx.fillStyle='red'; ctx.fillText('GAME OVER - Click to Restart', 60, 250); }
       } loop();
-    };
+    }
 
-    window.init_breakout = () => {
+    function init_breakout() {
       cvs.width=600; cvs.height=400; document.getElementById('cvs-hint').innerHTML = "Left / Right or A / D";
       let px=250, bx=300, by=300, bdx=4, bdy=-4, br=[], sc=0;
       for(let r=0;r<4;r++) for(let c=0;c<8;c++) br.push({x:c*70+25, y:r*30+30, st:1});
@@ -461,29 +470,29 @@
         if((keys['ArrowLeft']||keys['a']) && px>0) px-=7; if((keys['ArrowRight']||keys['d']) && px<500) px+=7;
         bx+=bdx; by+=bdy; if(bx<=0 || bx>=600) bdx=-bdx; if(by<=0) bdy=-bdy;
         if(by>=380 && bx>=px && bx<=px+100) bdy=-bdy; 
-        if(by>400) { window.submitScore('breakout', sc); bx=300; by=300; bdx=4; bdy=-4; sc=0; br.forEach(b=>b.st=1); }
+        if(by>400) { submitScore('breakout', sc); bx=300; by=300; bdx=4; bdy=-4; sc=0; br.forEach(b=>b.st=1); }
         ctx.fillStyle='#02bbee'; ctx.fillRect(px, 380, 100, 10); ctx.fillStyle='white'; ctx.beginPath(); ctx.arc(bx,by,6,0,Math.PI*2); ctx.fill();
         br.forEach(b=>{ if(b.st) { ctx.fillStyle='#e50914'; ctx.fillRect(b.x,b.y,65,20);
           if(bx>b.x && bx<b.x+65 && by>b.y && by<b.y+20) {bdy=-bdy; b.st=0; sc++;} }});
         ctx.fillStyle='white'; ctx.font='16px Arial'; ctx.fillText('Score: '+sc, 10, 20);
       } loop();
-    };
+    }
 
-    window.init_dodge = () => {
+    function init_dodge() {
       cvs.width=400; cvs.height=500; document.getElementById('cvs-hint').innerHTML = "Left / Right to dodge";
       let px=180, en=[], f=0, sc=0, over=false;
       function loop() {
         loopInt = requestAnimationFrame(loop); ctx.clearRect(0,0,400,500);
         if((keys['ArrowLeft']||keys['a']) && px>0) px-=6; if((keys['ArrowRight']||keys['d']) && px<360) px+=6;
         if(over && ptr.click) { px=180; en=[]; sc=0; over=false; ptr.click=false; }
-        if(!over) { f++; if(f%(Math.max(10, 40-Math.floor(sc/5)))===0) en.push({x:Math.random()*360, y:-40}); en.forEach(e=>{ e.y+=5; if(e.y>460 && e.y<500 && px<e.x+40 && px+40>e.x) { if(!over) window.submitScore('dodge', sc); over=true; } }); en=en.filter(e=>{if(e.y>500){sc++; return false;} return true;}); }
+        if(!over) { f++; if(f%(Math.max(10, 40-Math.floor(sc/5)))===0) en.push({x:Math.random()*360, y:-40}); en.forEach(e=>{ e.y+=5; if(e.y>460 && e.y<500 && px<e.x+40 && px+40>e.x) { if(!over) submitScore('dodge', sc); over=true; } }); en=en.filter(e=>{if(e.y>500){sc++; return false;} return true;}); }
         ctx.fillStyle='#02bbee'; ctx.fillRect(px, 460, 40, 40); ctx.fillStyle='red'; en.forEach(e=>ctx.fillRect(e.x, e.y, 40, 40));
         ctx.fillStyle='white'; ctx.font='20px Arial'; ctx.fillText('Score: '+sc, 10, 30);
         if(over) { ctx.fillStyle='red'; ctx.fillText('GAME OVER - Click to Restart', 60, 250); }
       } loop();
-    };
+    }
 
-    window.init_space = () => {
+    function init_space() {
       cvs.width=400; cvs.height=500; document.getElementById('cvs-hint').innerHTML = "Left/Right + Space to Shoot";
       let px=180, b=[], en=[], f=0, sc=0, over=false;
       function loop() {
@@ -494,15 +503,15 @@
         if(over && ptr.click) { px=180; b=[]; en=[]; sc=0; over=false; ptr.click=false; }
         
         ctx.fillStyle='yellow'; b.forEach((bu,i)=>{ bu.y-=8; ctx.fillRect(bu.x,bu.y,4,10); if(bu.y<0) b.splice(i,1); });
-        ctx.fillStyle='red'; en.forEach((e,i)=>{ e.y+=3; ctx.fillRect(e.x,e.y,30,30); if(e.y>500) { if(!over) window.submitScore('space', sc); over=true; } });
+        ctx.fillStyle='red'; en.forEach((e,i)=>{ e.y+=3; ctx.fillRect(e.x,e.y,30,30); if(e.y>500) { if(!over) submitScore('space', sc); over=true; } });
         b.forEach((bu,bi)=>{ en.forEach((e,ei)=>{ if(bu.x>e.x && bu.x<e.x+30 && bu.y>e.y && bu.y<e.y+30) { b.splice(bi,1); en.splice(ei,1); sc+=10; }})});
         ctx.fillStyle='#02bbee'; ctx.beginPath(); ctx.moveTo(px+20,440); ctx.lineTo(px,480); ctx.lineTo(px+40,480); ctx.fill();
         ctx.fillStyle='white'; ctx.font='20px Arial'; ctx.fillText('Score: '+sc, 10, 30);
         if(over) { ctx.fillStyle='red'; ctx.fillText('GAME OVER - Click to Restart', 60, 250); }
       } loop();
-    };
+    }
 
-    window.init_catch = () => {
+    function init_catch() {
       cvs.width=600; cvs.height=400; document.getElementById('cvs-hint').innerHTML = "Left/Right to catch apples";
       let px=250, a=[], f=0, sc=0, over=false;
       function loop() {
@@ -512,32 +521,32 @@
         if(!over) { f++; if(f%30===0) a.push({x:Math.random()*560, y:-20}); }
         ctx.fillStyle='red'; a.forEach((ap,i)=>{ ap.y+=4; ctx.beginPath(); ctx.arc(ap.x,ap.y,12,0,Math.PI*2); ctx.fill(); 
           if(ap.y>370 && ap.y<400 && ap.x>px && ap.x<px+100) { sc++; a.splice(i,1); } 
-          else if(ap.y>400) { if(!over) window.submitScore('catch', sc); over=true; }
+          else if(ap.y>400) { if(!over) submitScore('catch', sc); over=true; }
         });
         ctx.fillStyle='#8b4513'; ctx.fillRect(px, 370, 100, 30);
         ctx.fillStyle='white'; ctx.font='20px Arial'; ctx.fillText('Score: '+sc, 10, 30);
         if(over) { ctx.fillStyle='red'; ctx.fillText('GAME OVER - Click to Restart', 150, 200); }
       } loop();
-    };
+    }
 
-    window.init_reflex = () => {
+    function init_reflex() {
       cvs.width=600; cvs.height=400; document.getElementById('cvs-hint').innerHTML = "Click targets fast!";
       let t={x:300, y:200, r:30}, sc=0, tm=30, f=0;
       function loop() {
         loopInt = requestAnimationFrame(loop); ctx.clearRect(0,0,600,400);
         if(ptr.click) { ptr.click=false; if(tm<=0) {tm=30;sc=0;} else if(Math.hypot(ptr.x-t.x, ptr.y-t.y)<t.r) { sc++; t.x=Math.random()*500+50; t.y=Math.random()*300+50; t.r=Math.max(10,30-sc); } }
         if(tm>0) { f++; if(f%60===0) tm--; ctx.fillStyle='#30a13d'; ctx.beginPath(); ctx.arc(t.x,t.y,t.r,0,Math.PI*2); ctx.fill(); } 
-        else { ctx.fillStyle='red'; ctx.font='30px Arial'; ctx.fillText('Time Up! Click to Restart', 130, 200); if(tm===0 && f%60===1) window.submitScore('reflex', sc); }
+        else { ctx.fillStyle='red'; ctx.font='30px Arial'; ctx.fillText('Time Up! Click to Restart', 130, 200); if(tm===0 && f%60===1) submitScore('reflex', sc); }
         ctx.fillStyle='white'; ctx.font='20px Arial'; ctx.fillText('Score: '+sc+' | Time: '+tm, 10, 30);
       } loop();
-    };
+    }
 
     // ==========================================
     // DOM GAMES (9-15)
     // ==========================================
     let ttt=['','','','','','','','',''], tttA=true;
-    window.init_ttt = () => { ttt=['','','','','','','','','']; tttA=true; document.getElementById('ttt-status').innerText='Your turn! (X)'; document.getElementById('ttt-board').innerHTML = ttt.map((_,i)=>`<div class="cell" id="c${i}" onclick="window.tttClick(${i})"></div>`).join(''); };
-    window.tttClick = (i) => {
+    function init_ttt() { ttt=['','','','','','','','','']; tttA=true; document.getElementById('ttt-status').innerText='Your turn! (X)'; document.getElementById('ttt-board').innerHTML = ttt.map((_,i)=>`<div class="cell" id="c${i}" onclick="tttClick(${i})"></div>`).join(''); }
+    function tttClick(i) {
       if(ttt[i]!==''||!tttA) return; ttt[i]='X'; document.getElementById(`c${i}`).innerText='X';
       if(tttWin('X')) return document.getElementById('ttt-status').innerText='🎉 You Won!'; if(!ttt.includes('')) return document.getElementById('ttt-status').innerText='🤝 Draw!';
       tttA=false; document.getElementById('ttt-status').innerText='Thinking...';
@@ -545,38 +554,38 @@
         let e=ttt.map((v,i)=>v===''?i:null).filter(v=>v!==null), m=e[Math.floor(Math.random()*e.length)]; ttt[m]='O'; document.getElementById(`c${m}`).innerText='O'; document.getElementById(`c${m}`).style.color='red';
         if(tttWin('O')) document.getElementById('ttt-status').innerText='💀 Computer Won!'; else if(!ttt.includes('')) document.getElementById('ttt-status').innerText='🤝 Draw!'; else { document.getElementById('ttt-status').innerText='Your turn! (X)'; tttA=true; }
       }, 400);
-    };
+    }
     function tttWin(p) { return [[0,1,2],[3,4,5],[6,7,8],[0,3,6],[1,4,7],[2,5,8],[0,4,8],[2,4,6]].some(w=>w.every(i=>ttt[i]===p)); }
 
     let memArr=[], memF=[], memM=0;
-    window.init_memory = () => {
+    function init_memory() {
       let em = ['🍎','🍌','🍇','🍉','🍓','🍒','🍑','🥭']; memArr = [...em, ...em].sort(()=>Math.random()-0.5); memF=[]; memM=0;
       document.getElementById('mem-status').innerText = 'Matches: 0/8';
-      document.getElementById('mem-board').innerHTML = memArr.map((_,i)=>`<div class="cell mem-cell" id="m${i}" onclick="window.memClick(${i})">?</div>`).join('');
-    };
-    window.memClick = (i) => {
+      document.getElementById('mem-board').innerHTML = memArr.map((_,i)=>`<div class="cell mem-cell" id="m${i}" onclick="memClick(${i})">?</div>`).join('');
+    }
+    function memClick(i) {
       if(memF.length===2 || memF.includes(i) || document.getElementById(`m${i}`).innerText!=='?') return;
       document.getElementById(`m${i}`).innerText = memArr[i]; memF.push(i);
       if(memF.length===2) {
         if(memArr[memF[0]]===memArr[memF[1]]) { memM++; document.getElementById('mem-status').innerText=`Matches: ${memM}/8`; memF=[]; if(memM===8) document.getElementById('mem-status').innerText='🎉 You Won!'; }
         else setTimeout(()=>{ document.getElementById(`m${memF[0]}`).innerText='?'; document.getElementById(`m${memF[1]}`).innerText='?'; memF=[]; }, 600);
       }
-    };
+    }
 
     let wSc=0, wTm=30;
-    window.init_whack = () => {
-      wSc=0; wTm=30; document.getElementById('whack-board').innerHTML = Array(9).fill().map((_,i)=>`<div class="cell whack-cell" id="w${i}" onclick="window.whClick(${i})"></div>`).join('');
+    function init_whack() {
+      wSc=0; wTm=30; document.getElementById('whack-board').innerHTML = Array(9).fill().map((_,i)=>`<div class="cell whack-cell" id="w${i}" onclick="whClick(${i})"></div>`).join('');
       logicInt = setInterval(()=>{
         wTm--; document.getElementById('whack-score').innerText = `Score: ${wSc} | Time: ${wTm}`;
-        if(wTm<=0) { window.submitScore('whack', wSc); return clearInterval(logicInt); }
+        if(wTm<=0) { submitScore('whack', wSc); return clearInterval(logicInt); }
         document.querySelectorAll('.whack-cell').forEach(c=>c.classList.remove('mole'));
         document.getElementById(`w${Math.floor(Math.random()*9)}`).classList.add('mole');
       }, 1000);
-    };
-    window.whClick = (i) => { let el = document.getElementById(`w${i}`); if(el.classList.contains('mole') && wTm>0) { wSc++; el.classList.remove('mole'); el.style.background='white'; setTimeout(()=>el.style.background='', 100); } };
+    }
+    function whClick(i) { let el = document.getElementById(`w${i}`); if(el.classList.contains('mole') && wTm>0) { wSc++; el.classList.remove('mole'); el.style.background='white'; setTimeout(()=>el.style.background='', 100); } }
 
     let simSeq=[], simStep=0, simA=false;
-    window.init_simon = () => { simSeq=[]; simStep=0; simA=false; document.getElementById('simon-score').innerText='Watch...'; setTimeout(simNext, 1000); };
+    function init_simon() { simSeq=[]; simStep=0; simA=false; document.getElementById('simon-score').innerText='Watch...'; setTimeout(simNext, 1000); }
     function simNext() {
       simSeq.push(Math.floor(Math.random()*4)); simStep=0; document.getElementById('simon-score').innerText=`Level: ${simSeq.length}`;
       let i=0; let int = setInterval(()=>{
@@ -584,34 +593,34 @@
         let id=`simon-${simSeq[i]}`; document.getElementById(id).classList.add('active'); setTimeout(()=>document.getElementById(id).classList.remove('active'), 400); i++;
       }, 800);
     }
-    window.simonClick = (i) => {
+    function simonClick(i) {
       if(!simA) return;
       document.getElementById(`simon-${i}`).classList.add('active'); setTimeout(()=>document.getElementById(`simon-${i}`).classList.remove('active'), 200);
-      if(simSeq[simStep]===i) { simStep++; if(simStep===simSeq.length) { simA=false; window.submitScore('simon', simSeq.length); setTimeout(simNext, 1000); } }
-      else { document.getElementById('simon-score').innerText=`Game Over (Level ${simSeq.length}) - Restarting`; simA=false; setTimeout(window.init_simon, 2000); }
-    };
+      if(simSeq[simStep]===i) { simStep++; if(simStep===simSeq.length) { simA=false; submitScore('simon', simSeq.length); setTimeout(simNext, 1000); } }
+      else { document.getElementById('simon-score').innerText=`Game Over (Level ${simSeq.length}) - Restarting`; simA=false; setTimeout(init_simon, 2000); }
+    }
 
     let clkS=0, clkA=0;
-    window.init_clicker = () => { clkS=0; clkA=0; updateClk(); logicInt = setInterval(()=>{ clkS+=clkA; updateClk(); if(clkA>0) window.submitScore('clicker', clkS); }, 1000); };
-    window.clickerAdd = () => { clkS++; updateClk(); window.submitScore('clicker', clkS); };
-    window.clickerBuy = () => { if(clkS>=50) { clkS-=50; clkA++; updateClk(); } };
+    function init_clicker() { clkS=0; clkA=0; updateClk(); logicInt = setInterval(()=>{ clkS+=clkA; updateClk(); if(clkA>0) submitScore('clicker', clkS); }, 1000); }
+    function clickerAdd() { clkS++; updateClk(); submitScore('clicker', clkS); }
+    function clickerBuy() { if(clkS>=50) { clkS-=50; clkA++; updateClk(); } }
     function updateClk() { document.getElementById('clicker-score').innerText=`Cash: $${clkS}`; document.getElementById('clicker-auto').innerText=`Auto-Clickers: ${clkA}`; }
 
     let rxSt=0, rxTm=0;
-    window.init_reaction = () => { rxSt=0; let b=document.getElementById('reaction-box'); b.style.background='#e50914'; b.innerText='Click to Start'; document.getElementById('reaction-score').innerText=''; };
-    window.reactionClick = () => {
+    function init_reaction() { rxSt=0; let b=document.getElementById('reaction-box'); b.style.background='#e50914'; b.innerText='Click to Start'; document.getElementById('reaction-score').innerText=''; }
+    function reactionClick() {
       let b=document.getElementById('reaction-box');
       if(rxSt===0) { rxSt=1; b.style.background='#e4b61a'; b.innerText='Wait for Green...'; setTimeout(()=>{ if(rxSt===1) {rxSt=2; b.style.background='#30a13d'; b.innerText='CLICK NOW!'; rxTm=Date.now();} }, Math.random()*2000+1000); }
-      else if(rxSt===1) { rxSt=0; document.getElementById('reaction-score').innerText='Too early!'; window.init_reaction(); }
-      else if(rxSt===2) { rxSt=0; let t = Date.now()-rxTm; document.getElementById('reaction-score').innerText=`Time: ${t}ms`; window.submitScore('reaction', t); b.style.background='#02bbee'; b.innerText='Click to Restart'; }
-    };
+      else if(rxSt===1) { rxSt=0; document.getElementById('reaction-score').innerText='Too early!'; init_reaction(); }
+      else if(rxSt===2) { rxSt=0; let t = Date.now()-rxTm; document.getElementById('reaction-score').innerText=`Time: ${t}ms`; submitScore('reaction', t); b.style.background='#02bbee'; b.innerText='Click to Restart'; }
+    }
 
     let typWords = ['javascript','developer','function','variable','array','object','string','boolean','github','domain','server','client','browser','console','return','window','document','event','timeout','interval'], typSc=0, typTm=60;
-    window.init_typing = () => {
+    function init_typing() {
       typSc=0; typTm=60; document.getElementById('typing-input').value=''; setWord();
-      logicInt = setInterval(()=>{ typTm--; document.getElementById('typing-stats').innerText=`Score: ${typSc} | Time: ${typTm}`; if(typTm<=0) {clearInterval(logicInt); window.submitScore('typing', typSc); document.getElementById('typing-word').innerText='Game Over!'; document.getElementById('typing-input').disabled=true;} }, 1000);
+      logicInt = setInterval(()=>{ typTm--; document.getElementById('typing-stats').innerText=`Score: ${typSc} | Time: ${typTm}`; if(typTm<=0) {clearInterval(logicInt); submitScore('typing', typSc); document.getElementById('typing-word').innerText='Game Over!'; document.getElementById('typing-input').disabled=true;} }, 1000);
       document.getElementById('typing-input').disabled=false; document.getElementById('typing-input').focus();
-    };
+    }
     function setWord() { document.getElementById('typing-word').innerText = typWords[Math.floor(Math.random()*typWords.length)]; }
     document.getElementById('typing-input').addEventListener('input', function(e) { if(e.target.value.trim() === document.getElementById('typing-word').innerText && typTm>0) { typSc++; e.target.value=''; setWord(); document.getElementById('typing-stats').innerText=`Score: ${typSc} | Time: ${typTm}`; } });
 
