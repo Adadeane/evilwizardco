@@ -306,13 +306,8 @@
         const p = profiles.find(item => item.id === id);
         if (p.name.toLowerCase() === 'adam') {
           const pin = prompt("Enter PIN:");
-          // Validates against null (cancel) or wrong PIN safely
-          if (pin === null || pin.trim() !== "8888") { 
-            alert("Incorrect PIN! Access Denied."); 
-            return; 
-          }
+          if (pin === null || pin.trim() !== "8888") { alert("Incorrect PIN! Access Denied."); return; }
         }
-        // Safely launch hub
         enterArcadeHub(id);
       }
     }
@@ -360,7 +355,6 @@
       try {
         let finalImg = newImgUrl || p.img;
 
-        // Custom Canvas Image Compressor (Free Base64 storage)
         if (fileInput) {
           finalImg = await new Promise((resolve) => {
             const reader = new FileReader();
@@ -406,7 +400,6 @@
       closeModal('edit-modal');
     }
 
-    // RENAMED from login() to avoid browser autofill script collisions
     function enterArcadeHub(id) {
       activeProfile = profiles.find(p => p.id === id);
       if (!activeProfile) return;
